@@ -19,3 +19,13 @@
 
 # Go workspace file
 go.work
+
+# examples
+downloads
+example
+
+.data
+.secrets
+
+# extra cautious about test data
+charts/argobot/templates/secrets.yaml

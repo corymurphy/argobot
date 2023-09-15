@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "argobot.fullname" . }}
+  labels:
+    {{- include "argobot.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "argobot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "argobot.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "argobot.serviceAccountName" . }}
+      volumes:
+      {{- if .Values.githubApp.privateKeySecretName }}
+      - name: github-app-key-volume
+        secret:
+          secretName: {{ template "argobot.webhookSecretName" . }}
+          items:
+          - key: key.pem
+            path: key.pem
+      {{- end }}
+      {{- if .Values.config }}
+      - name: config
+        configMap:
+          name:  {{ template "argobot.fullname" . }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          volumeMounts:
+          {{- if .Values.githubApp.privateKeySecretName }}
+          - name: github-app-key-volume
+            mountPath: /app/key.pem
+            subPath: key.pem
+            readOnly: true
+          {{- end }}
+          {{- if .Values.config }}
+          - name: config
+            mountPath: /app/config.yml
+            subPath: config.yml
+            readOnly: true
+          {{- end }}
+          env:
+          - name: ARGOBOT_GH_WEBHOOK_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "argobot.webhookSecretName" . }}
+                key: webhook_secret

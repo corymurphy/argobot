@@ -1,0 +1,3 @@
+#!/bin/bash
+
+go run ./cmd/argobot start --config-path ./secrets/config.yml "$@"

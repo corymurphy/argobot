@@ -1,0 +1,43 @@
+replicaCount: 1
+
+image:
+  # docker pull ghcr.io/corymurphy/argobot:0.0.1-alpha0
+  repository: ghcr.io/corymurphy/argobot
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+githubApp:
+  webhookSecretName: argobot
+  privateKeySecretName: argobot
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config: |
+  server:
+    address: "0.0.0.0"
+    port: 8080
+
+  github:
+    v3_api_url: "https://api.github.com"
+    app:
+      integration_id: 77423
+
+  app_configuration:
+    pull_request_preamble: "I am echo bot."
+    data_directory: .data
+    private_key_file_path: /app/key.pem

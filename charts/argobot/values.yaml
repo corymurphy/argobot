@@ -43,6 +43,7 @@ config: |
     pull_request_preamble: "I am echo bot."
     data_directory: .data
     private_key_file_path: /app/key.pem
+    installation_id: 
 
   argocli_config:
     command: argocd

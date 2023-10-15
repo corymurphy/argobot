@@ -8,6 +8,6 @@ import (
 
 func Test_Command_Echo_SuccessStatusCode(t *testing.T) {
 	expected := 0
-	actual, _ := NewCommand().Run("echo", []string{"'hello world'"})
+	actual, _ := NewCommand().Run("echo", "'hello world'")
 	assert.Equal(t, expected, actual, "echo should have a zero exit code")
 }

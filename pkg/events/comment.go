@@ -34,7 +34,6 @@ import (
 type PRCommentHandler struct {
 	githubapp.ClientCreator
 	Config *env.Config
-	// preamble string
 }
 
 func (h *PRCommentHandler) Handles() []string {
@@ -129,15 +128,13 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 
 	apiClient := cmgithub.NewApiClient(*h.Config)
 
-	token, _ := apiClient.NewAccessToken("39903519")
+	token, _ := apiClient.NewAccessToken(h.Config.AppConfig.InstallationID)
 
 	git := cmgithub.NewGitClient(*h.Config, token)
 
 	git.Clone(repoOwner, repoName, dir)
 
-	argocd := argocd.NewCliClient()
-	// argocd.ArgoCDBinPath = "argocd"
-	// sha := event.
+	argocd := argocd.NewCliClient(h.Config.AppConfig.ArgoCliConfig)
 
 	diff, err := argocd.Diff(parser.Application, *sha)
 

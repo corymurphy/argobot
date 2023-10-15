@@ -26,7 +26,7 @@ func NewApiClient(config env.Config) *APIClient {
 	}
 }
 
-func (a *APIClient) NewAccessToken(installationID string) (AccessToken, error) {
+func (a *APIClient) NewAccessToken(installationID int64) (AccessToken, error) {
 
 	jwt, err := auth.CreateJWT([]byte(a.Config.Github.App.PrivateKey))
 
@@ -34,7 +34,7 @@ func (a *APIClient) NewAccessToken(installationID string) (AccessToken, error) {
 		return AccessToken{}, err
 	}
 
-	url := fmt.Sprintf("https://%s/app/installations/%s/access_tokens", a.Host, installationID)
+	url := fmt.Sprintf("https://%s/app/installations/%d/access_tokens", a.Host, installationID)
 
 	req, err := http.NewRequest("POST", url, nil)
 

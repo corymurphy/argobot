@@ -2,19 +2,20 @@ package argocd
 
 import (
 	"github.com/corymurphy/argobot/pkg/cmd"
+	"github.com/corymurphy/argobot/pkg/env"
 )
 
 type CliClient struct {
 	Server        string
 	Command       cmd.Command
 	ArgoCDBinPath string
-	ArgoCliConfig ArgoCliConfig
+	ArgoCliConfig env.ArgoCliConfig
 }
 
-func NewCliClient() *CliClient {
+func NewCliClient(config env.ArgoCliConfig) *CliClient {
 	return &CliClient{
-		Server:        "argocd-server.argocd", // TODO: set a good default
-		ArgoCDBinPath: "argocd",               // TODO: Figure out how to make this dynamic
+		Server:        config.Server,
+		ArgoCDBinPath: config.Command,
 		Command:       cmd.NewShellCommand(),
 	}
 }
@@ -28,7 +29,7 @@ func (c *CliClient) Diff(app string, sha string) (string, error) {
 		"app",
 		"diff",
 		"--server-side-generate",
-		"--plaintext",
+		c.ArgoCliConfig.AdditionalArgs,
 		app,
 		"--revision",
 		sha,

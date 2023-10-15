@@ -1,0 +1,3 @@
+#!/bin/bash
+
+kubectl --namespace argobot port-forward service/argobot 8080

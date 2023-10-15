@@ -70,8 +70,6 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 		return err
 	}
 
-	parser := parsing.NewPRCommentParser(event)
-
 	repoOwner := repo.GetOwner().GetLogin()
 	repoName := repo.GetName()
 
@@ -83,6 +81,13 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	sha := pr.GetHead().SHA
 
 	logger.Debug().Msgf(*sha)
+
+	parser, err := parsing.NewPRCommentParser(event)
+
+	if err != nil {
+		logger.Debug().Err(err)
+		return nil
+	}
 
 	if parser.IsBot {
 		logger.Debug().Msg("Issue comment was created by a bot")
@@ -131,6 +136,7 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	git.Clone(repoOwner, repoName, dir)
 
 	argocd := argocd.NewCliClient()
+	// argocd.ArgoCDBinPath = "argocd"
 	// sha := event.
 
 	diff, err := argocd.Diff(parser.Application, *sha)

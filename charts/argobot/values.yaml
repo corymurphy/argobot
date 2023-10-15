@@ -25,6 +25,8 @@ githubApp:
 
 service:
   type: ClusterIP
+  # type: NodePort
+  # nodePort: 31031
   port: 8080
 
 config: |
@@ -41,3 +43,8 @@ config: |
     pull_request_preamble: "I am echo bot."
     data_directory: .data
     private_key_file_path: /app/key.pem
+
+  argocli_config:
+    command: argocd
+    server: argocd-server.argocd
+    additional_args: --plaintext

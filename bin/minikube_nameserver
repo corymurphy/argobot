@@ -1,0 +1,3 @@
+#!/bin/bash
+
+minikube ssh -- cat /etc/resolv.conf

@@ -1,20 +1,24 @@
 package parsing
 
 import (
+	"errors"
 	"strings"
+	"unicode"
 
 	"github.com/google/go-github/v53/github"
 )
 
 const (
-	BotCommand string  = "argo"
-	Diff       Command = "diff"
-	Sync       Command = "sync"
-	Help       Command = "help"
-	Unknown    Command = "unknown"
-	Error      Command = "error"
-	ArgApp     string  = "--application"
-	ArgDir     string  = "--directory"
+	BotCommand    string  = "argo"
+	Diff          Command = "diff"
+	Sync          Command = "sync"
+	Help          Command = "help"
+	Unknown       Command = "unknown"
+	Error         Command = "error"
+	ArgApp        string  = "--application"
+	CommandMaxLen int     = 256
+	AppNameMaxLen int     = 128
+	// ArgDir     string  = "--directory"
 )
 
 type Command string
@@ -25,10 +29,19 @@ type PRCommentParser struct {
 	IsArgoCommand bool
 	Command       Command
 	Application   string
-	Directory     string
+	// Directory     string
 }
 
-func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
+func IsLetter(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func NewPRCommentParser(event github.IssueCommentEvent) (PRCommentParser, error) {
 
 	author := event.GetComment().GetUser().GetLogin()
 	isBot := strings.HasSuffix(author, "[bot]")
@@ -37,10 +50,15 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 		return PRCommentParser{
 			Event: event,
 			IsBot: isBot,
-		}
+		}, nil
 	}
 
 	body := event.GetComment().Body
+
+	if len(*body) > CommandMaxLen {
+		return PRCommentParser{}, errors.New("pull request comment body exceeded max length")
+	}
+
 	isArgo := strings.HasPrefix(*body, BotCommand)
 
 	if !isArgo {
@@ -48,7 +66,7 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 			Event:         event,
 			IsBot:         isBot,
 			IsArgoCommand: isArgo,
-		}
+		}, nil
 	}
 
 	if *body == BotCommand {
@@ -57,7 +75,7 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 			IsBot:         isBot,
 			IsArgoCommand: isArgo,
 			Command:       Help,
-		}
+		}, nil
 	}
 
 	args := strings.Split(*body, " ")
@@ -68,7 +86,7 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 			IsBot:         isBot,
 			IsArgoCommand: isArgo,
 			Command:       Help,
-		}
+		}, nil
 	}
 
 	command := Unknown
@@ -86,12 +104,13 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 			IsBot:         isBot,
 			IsArgoCommand: isArgo,
 			Command:       Unknown,
-		}
+		}, nil
 	}
 
 	app := ""
-	dir := ""
+	// dir := ""
 
+	// this is gross, i'm going to fix it
 	if command == Diff {
 		for i := 2; i < len(args); i++ {
 
@@ -102,16 +121,16 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 				continue
 			}
 
-			if args[i] == ArgDir && i < len(args)+1 {
-				dir = args[i+1]
-				i++
-				continue
-			}
+			// if args[i] == ArgDir && i < len(args)+1 {
+			// 	dir = args[i+1]
+			// 	i++
+			// 	continue
+			// }
 
 		}
 
-		if app == "" || dir == "" {
-			command = Error
+		if app == "" || IsLetter(app) || len(app) > AppNameMaxLen {
+			return PRCommentParser{}, errors.New("argo application name is either empty or greater than max length")
 		}
 
 		return PRCommentParser{
@@ -120,8 +139,8 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 			IsArgoCommand: isArgo,
 			Command:       command,
 			Application:   app,
-			Directory:     dir,
-		}
+			// Directory:     dir,
+		}, nil
 	}
 
 	return PRCommentParser{
@@ -129,5 +148,5 @@ func NewPRCommentParser(event github.IssueCommentEvent) PRCommentParser {
 		IsBot:         isBot,
 		IsArgoCommand: isArgo,
 		Command:       Unknown,
-	}
+	}, nil
 }

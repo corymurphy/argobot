@@ -26,6 +26,8 @@ example
 
 .data
 .secrets
+.artifacts
 
 # extra cautious about test data
 charts/argobot/templates/secrets.yaml
+charts/argocd/charts

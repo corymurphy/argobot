@@ -1,0 +1,12 @@
+apiVersion: v2
+name: argocd
+type: application
+
+# These versions match the actual referenced helm chart for simplicity
+version: 5.41.2
+appVersion: 2.7.9
+
+dependencies:
+  - name: argo-cd
+    version: 5.41.2 # most recent version that supports k8s 1.23+
+    repository: https://argoproj.github.io/argo-helm

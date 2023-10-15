@@ -8,18 +8,18 @@ type CliClient struct {
 	Server        string
 	Command       cmd.Command
 	ArgoCDBinPath string
+	ArgoCliConfig ArgoCliConfig
 }
 
 func NewCliClient() *CliClient {
 	return &CliClient{
-		Server:        "https://argocd.local",
-		ArgoCDBinPath: "./bin/argocd-linux-amd64", // TODO: Figure out how to make this dynamic
+		Server:        "argocd-server.argocd", // TODO: set a good default
+		ArgoCDBinPath: "argocd",               // TODO: Figure out how to make this dynamic
 		Command:       cmd.NewShellCommand(),
 	}
 }
 
 func (c *CliClient) Diff(app string, sha string) (string, error) {
-	// ./bin/argocd-linux-amd64 --server https://argocd.local app diff --server-side-generate helloworld
 
 	result, err := c.Command.Run(
 		c.ArgoCDBinPath,
@@ -28,6 +28,7 @@ func (c *CliClient) Diff(app string, sha string) (string, error) {
 		"app",
 		"diff",
 		"--server-side-generate",
+		"--plaintext",
 		app,
 		"--revision",
 		sha,

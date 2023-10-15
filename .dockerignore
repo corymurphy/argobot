@@ -1,0 +1,7 @@
+.data
+.secrets
+.github
+.artifacts
+downloads
+secrets.yaml
+charts/

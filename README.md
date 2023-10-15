@@ -2,6 +2,12 @@
 
 GitHub bot for ArgoCD. Inspired by Atlantis for Terraform.
 
+## Deploy
+
+```shell
+helm repo add corymurphy https://corymurphy.github.io/argobot
+```
+
 ## Develop
 
 Built using [palantir/go-githubapp](https://github.com/palantir/go-githubapp)
@@ -17,9 +23,26 @@ kubectl get pods -n ingress-nginx
 kubectl create deployment web --image=gcr.io/google-samples/hello-app:1.0
 kubectl expose deployment web --type=NodePort --port=8080
 minikube service web --url
-
-helm upgrade argocd . --values values.yaml
 ```
+
+### Deploy argocd
+
+```shell
+# deploy argocd
+helm dependency update --skip-refresh charts/argocd/
+helm upgrade argocd --install --values charts/argocd/values.yaml --namespace argocd --create-namespace charts/argocd/
+
+# connect to argocd
+kubectl port-forward --namespace argocd service/argocd-server 8000:80
+```
+
+### Deploy argobot
+
+```shell
+./bin/minikube_build_deploy
+./bin/expose
+```
+
 ## Planning
 
 - [x] pull a git repository and store in a org/repo/pr_num directory

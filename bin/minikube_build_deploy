@@ -1,0 +1,5 @@
+#!/bin/bash
+
+minikube image build . -t ghcr.io/corymurphy/argobot:0.1.0
+helm uninstall argobot --kube-context minikube --namespace argobot;
+helm upgrade --install --kube-context minikube --create-namespace --namespace argobot argobot ./charts/argobot/;

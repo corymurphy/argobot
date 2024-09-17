@@ -28,10 +28,10 @@ func mockServer(requests map[string]bool, mu *sync.Mutex) *httptest.Server {
 		mu.Unlock()
 		fmt.Fprint(w, string(response))
 	})
-	router.HandleFunc("/repos/corymurphy/argocd-data/issues/1/comments", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/repos/atlas8518/argocd-data/issues/1/comments", func(w http.ResponseWriter, r *http.Request) {
 		response, _ := os.ReadFile("../testdata/github_issues_comment_response.json")
 		mu.Lock()
-		requests["/repos/corymurphy/argocd-data/issues/1/comments"] = true
+		requests["/repos/atlas8518/argocd-data/issues/1/comments"] = true
 		mu.Unlock()
 		fmt.Fprint(w, string(response))
 	})
@@ -42,8 +42,8 @@ func mockServer(requests map[string]bool, mu *sync.Mutex) *httptest.Server {
 func Test_TokenRequested(t *testing.T) {
 
 	requests := map[string]bool{
-		"/app/installations/123456/access_tokens":         false,
-		"/repos/corymurphy/argocd-data/issues/1/comments": false,
+		"/app/installations/123456/access_tokens":        false,
+		"/repos/atlas8518/argocd-data/issues/1/comments": false,
 	}
 	mu := sync.Mutex{}
 
@@ -53,7 +53,7 @@ func Test_TokenRequested(t *testing.T) {
 	defer mockServer.Close()
 
 	var event github.IssueCommentEvent
-	payload, _ := os.ReadFile("../../samples/pullrequest_comment_test.json")
+	payload, _ := os.ReadFile("../testdata/comments/pullrequest_comment_user_plan.json")
 
 	if err := json.Unmarshal(payload, &event); err != nil {
 		t.Error(err)

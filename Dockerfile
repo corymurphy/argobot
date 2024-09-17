@@ -1,6 +1,6 @@
 # gcr.io/distroless/static-debian11
 
-FROM golang:1.21.0-alpine AS builder
+FROM golang:1.22.7-alpine AS builder
 
 ARG ALPINE_TAG=latest
 
@@ -28,7 +28,7 @@ COPY . /app
 
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X 'main.version=${ARGOBOT_VERSION}' -X 'main.commit=${ARGOBOT_COMMIT}'" -v -o argobot ./cmd/argobot
 
-FROM alpine:latest AS alpine
+FROM alpine:latest AS base
 
 RUN addgroup argobot && \
     adduser -S -G argobot argobot && \
@@ -37,22 +37,29 @@ RUN addgroup argobot && \
     chmod g=u /home/argobot/ && \
     chmod g=u /etc/passwd
 
-COPY --from=builder /app/argobot /usr/local/bin/argobot
-# COPY ./bin/argocd-linux-amd64 /usr/local/bin/argocd
+
+FROM base as argocli
+
 COPY --from=builder /tmp/argocd-linux-amd64 /tmp/argocd-linux-amd64
 RUN install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd && rm -f /tmp/argocd-linux-amd64
-# RUN curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 \
-#     sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd \
-#     rm argocd-linux-amd64
 
 RUN apk add --no-cache \
-        ca-certificates~=20230506 \
-        git~=2.40
+        ca-certificates \
+        git
 
 RUN mkdir /app && \
     chown argobot:argobot /app
 
 WORKDIR /app
+
+USER argobot
+
+FROM argocli
+
+USER root
+
+COPY --from=builder /app/argobot /tmp/argobot
+RUN install -m 555 /tmp/argobot /usr/local/bin/argobot && rm -f /tmp/argobot
 
 USER argobot
 

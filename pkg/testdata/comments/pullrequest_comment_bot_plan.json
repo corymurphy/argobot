@@ -1,0 +1,72 @@
+{
+  "action": "created",
+  "issue": {
+    "url": "https://api.github.com/repos/atlas8518/argocd-data/issues/1",
+    "repository_url": "https://api.github.com/repos/atlas8518/argocd-data",
+    "comments_url": "https://api.github.com/repos/atlas8518/argocd-data/issues/1/comments",
+    "id": 345345345,
+    "number": 1,
+    "title": "test",
+    "user": {
+      "login": "atlas8518",
+      "id": 345634534,
+      "type": "User",
+      "site_admin": false
+    },
+    "created_at": "2023-08-07T16:30:37Z",
+    "updated_at": "2023-08-13T13:46:46Z",
+    "draft": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/atlas8518/argocd-data/pulls/1",
+      "html_url": "https://github.com/atlas8518/argocd-data/pull/1",
+      "diff_url": "https://github.com/atlas8518/argocd-data/pull/1.diff",
+      "patch_url": "https://github.com/atlas8518/argocd-data/pull/1.patch",
+      "merged_at": null
+    },
+    "body": "test"
+  },
+  "comment": {
+    "url": "https://api.github.com/repos/atlas8518/argocd-data/issues/comments/1676365195",
+    "html_url": "https://github.com/atlas8518/argocd-data/pull/1#issuecomment-1676365195",
+    "issue_url": "https://api.github.com/repos/atlas8518/argocd-data/issues/1",
+    "id": 456456,
+    "user": {
+      "login": "cam-argobot[bot]",
+      "id": 456456,
+      "type": "Bot"
+    },
+    "created_at": "2023-08-13T13:46:45Z",
+    "updated_at": "2023-08-13T13:46:45Z",
+    "body": "```diff\n\n===== apps/Deployment default/web ======\n8a9\n>     argocd.argoproj.io/instance: helloworld\n\n```",
+    "performed_via_github_app": null
+  },
+  "repository": {
+    "id": 123123,
+    "name": "argocd-data",
+    "full_name": "atlas8518/argocd-data",
+    "owner": {
+      "login": "atlas8518",
+      "id": 345347634,
+      "type": "User"
+    },
+    "html_url": "https://github.com/atlas8518/argocd-data",
+    "description": "test",
+    "url": "https://api.github.com/repos/atlas8518/argocd-data",
+    "comments_url": "https://api.github.com/repos/atlas8518/argocd-data/comments{/number}",
+    "issue_comment_url": "https://api.github.com/repos/atlas8518/argocd-data/issues/comments{/number}",
+    "created_at": "2023-08-02T22:56:26Z",
+    "updated_at": "2023-08-07T14:15:51Z",
+    "pushed_at": "2023-08-07T16:30:37Z",
+    "git_url": "git://github.com/atlas8518/argocd-data.git",
+    "size": 3,
+    "default_branch": "main"
+  },
+  "sender": {
+    "login": "cam-argobot[bot]",
+    "id": 345345345,
+    "type": "Bot"
+  },
+  "installation": {
+    "id": 345345345
+  }
+}

@@ -1,6 +1,8 @@
 package argocd
 
 import (
+	"fmt"
+
 	"github.com/corymurphy/argobot/pkg/cmd"
 	"github.com/corymurphy/argobot/pkg/env"
 )
@@ -16,27 +18,32 @@ func NewCliClient(config env.ArgoCliConfig) *CliClient {
 	return &CliClient{
 		Server:        config.Server,
 		ArgoCDBinPath: config.Command,
-		Command:       cmd.NewShellCommand(),
+		ArgoCliConfig: config,
+		Command:       cmd.NewNonCachingShell(),
 	}
 }
 
-func (c *CliClient) Diff(app string, sha string) (string, error) {
-
-	result, err := c.Command.Run(
+func (c *CliClient) Plan(app string, sha string) (string, error) {
+	command := fmt.Sprintf(
+		"%s --server %s app diff --server-side-generate %s --revision %s",
 		c.ArgoCDBinPath,
-		"--server",
 		c.Server,
-		"app",
-		"diff",
-		"--server-side-generate",
-		c.ArgoCliConfig.AdditionalArgs,
 		app,
-		"--revision",
 		sha,
 	)
 
+	if c.ArgoCliConfig.AdditionalArgs != "" {
+		command = command + " " + c.ArgoCliConfig.AdditionalArgs
+	}
+
+	result, err := c.Command.Run(
+		"/bin/sh",
+		"-c",
+		command,
+	)
+
 	if err != nil && result == nil {
-		return "", err
+		return "empty diff", err
 	}
 
 	return string(result), nil

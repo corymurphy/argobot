@@ -6,5 +6,6 @@ type Config struct {
 	Server HTTPConfig       `yaml:"server"`
 	Github githubapp.Config `yaml:"github"`
 
-	AppConfig AppConfig `yaml:"app_configuration"`
+	AppConfig     AppConfig     `yaml:"app_configuration"`
+	ArgoCliConfig ArgoCliConfig `yaml:"argocli_config"`
 }

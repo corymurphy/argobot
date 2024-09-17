@@ -1,0 +1,14 @@
+server:
+  address: "127.0.0.1"
+  port: 8080
+
+github:
+  v3_api_url: "https://api.github.com"
+  app:
+    integration_id: 123456
+    webhook_secret: fc1b391fa17718cfdbf9497ec9bfe59
+
+app_configuration:
+  pull_request_preamble: "I am echo bot."
+  data_directory: .data
+  private_key_file_path: ../testdata/github_app.pem

@@ -2,42 +2,26 @@ package cli
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/spf13/cobra"
-
-	"github.com/corymurphy/argobot/pkg/argocd"
 )
 
 var debug = &cobra.Command{
 	Use:   "debug",
-	Short: "debug",
-	Long:  `debug`,
+	Short: "debugs the server",
+	Long:  `debugs the server`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// runner = cmd.Command./bin/argocd-linux-amd64 --server https://argocd.local app diff --server-side-generate helloworld{}
-
-		// ./bin/argocd-linux-amd64 --server https://argocd.local app diff --server-side-generate helloworld
-
-		// result, _ := runner.NewShellCommand().Run(
-		// 	"./bin/argocd-linux-amd64",
-		// 	"--server",
-		// 	"https://argocd.local",
-		// 	"app",
-		// 	"diff",
-		// 	"--server-side-generate",
-		// 	"helloworld",
-		// )
-
-		// fmt.Println(string(result))
-
-		// result, err := runner.CliCommand{}.Run()
-		client := argocd.NewCliClient()
-		diff, err := client.Diff("helloworld", "")
-
-		fmt.Println(err)
-		fmt.Println(diff)
+		fmt.Println("debug")
+		http.HandleFunc("/", HelloServer)
+		http.ListenAndServe(":8080", nil)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(debug)
+}
+
+func HelloServer(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
 }

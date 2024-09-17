@@ -15,6 +15,10 @@ Built using [palantir/go-githubapp](https://github.com/palantir/go-githubapp)
 Install minikube. [docs](https://minikube.sigs.k8s.io/docs/start/).
 
 ```shell
+# start minikube
+eval $(minikube -p minikube docker-env)
+./bin/minikube_start
+
 # enable ingress
 minikube addons enable ingress
 kubectl get pods -n ingress-nginx
@@ -29,8 +33,9 @@ minikube service web --url
 
 ```shell
 # deploy argocd
+helm dependency update charts/argocd/
 helm dependency update --skip-refresh charts/argocd/
-helm upgrade argocd --install --values charts/argocd/values.yaml --namespace argocd --create-namespace charts/argocd/
+helm upgrade argocd --kube-context kind-kind --install --values charts/argocd/values.yaml --namespace argocd --create-namespace charts/argocd/
 
 # connect to argocd
 kubectl port-forward --namespace argocd service/argocd-server 8000:80
@@ -64,3 +69,8 @@ kubectl port-forward --namespace argocd service/argocd-server 8000:80
 
 - mocking the github sdk https://github.com/migueleliasweb/go-github-mock
 - testing https://github.com/google/go-github/blob/master/test/README.md
+- unit testing http https://stackoverflow.com/questions/51120033/how-to-test-http-calls-in-go
+- http handler response recorder https://ieftimov.com/posts/testing-in-go-testing-http-servers/
+- testing bot - https://github.com/apps/cam-argobot
+- atlantis uses `g := events.DefaultGithubRequestValidator{}` to validate github webhooks
+- add step to download argo cli for testing or docker cli step

@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: helloworld
+  namespace: argocd
+spec:
+  destination:
+    namespace: helloworld
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: minikube/manifests/helloworld
+    repoURL: https://github.com/corymurphy/argocd-data
+    targetRevision: HEAD

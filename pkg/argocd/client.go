@@ -1,5 +1,5 @@
 package argocd
 
 type Client interface {
-	Diff(app string, sha string) (string, error)
+	Plan(app string, sha string) (string, error)
 }

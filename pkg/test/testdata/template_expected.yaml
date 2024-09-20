@@ -1,0 +1,141 @@
+---
+# Source: argobot/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-argobot
+  labels:
+    helm.sh/chart: argobot-0.1.0
+    app.kubernetes.io/name: argobot
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: argobot/templates/config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-argobot
+  labels:
+    helm.sh/chart: argobot-0.1.0
+    app.kubernetes.io/name: argobot
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  config.yml: |
+    server:
+      address: "0.0.0.0"
+      port: 8080
+    
+    github:
+      v3_api_url: "https://api.github.com"
+      app:
+        integration_id: 77423
+    
+    app_configuration:
+      pull_request_preamble: "I am echo bot."
+      data_directory: .data
+      private_key_file_path: /app/key.pem
+    
+    argocli_config:
+      command: argocd
+      server: argocd-server.argocd
+      additional_args: --plaintext
+---
+# Source: argobot/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-argobot
+  labels:
+    helm.sh/chart: argobot-0.1.0
+    app.kubernetes.io/name: argobot
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: argobot
+    app.kubernetes.io/instance: test
+---
+# Source: argobot/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-argobot
+  labels:
+    helm.sh/chart: argobot-0.1.0
+    app.kubernetes.io/name: argobot
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argobot
+      app.kubernetes.io/instance: test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argobot
+        app.kubernetes.io/instance: test
+    spec:
+      serviceAccountName: test-argobot
+      volumes:
+      - name: github-app-key-volume
+        secret:
+          secretName: argobot
+          items:
+          - key: key.pem
+            path: key.pem
+      - name: config
+        configMap:
+          name:  test-argobot
+      containers:
+      - name: argobot
+        image: "ghcr.io/corymurphy/argobot:0.1.0"
+        imagePullPolicy: IfNotPresent
+        command: ["argobot"]
+        args: [start]
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mb
+          requests:
+            cpu: 250m
+            memory: 256Mb
+        ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        volumeMounts:
+        - name: github-app-key-volume
+          mountPath: /app/key.pem
+          subPath: key.pem
+          readOnly: true
+        - name: config
+          mountPath: /app/config.yml
+          subPath: config.yml
+          readOnly: true
+        env:
+        - name: ARGOBOT_GH_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: argobot
+              key: webhook_secret

@@ -27,6 +27,8 @@ example
 .data
 .secrets
 .artifacts
+.debug
+.vscode
 
 # extra cautious about test data
 charts/argobot/templates/secrets.yaml

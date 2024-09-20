@@ -14,5 +14,9 @@ build:
 test:
 	go test ./...
 
+test-helm:
+	go clean -testcache;
+	go test ./pkg/test/integration/
+
 build-argocli:
 	docker build -t ghcr.io/corymurphy/argocli --target argocli .

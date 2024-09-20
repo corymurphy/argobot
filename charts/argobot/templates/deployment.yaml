@@ -30,39 +30,41 @@ spec:
           name:  {{ template "argobot.fullname" . }}
       {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["argobot"]
-          args: {{ .Values.command }}
-          ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-          volumeMounts:
-          {{- if .Values.githubApp.privateKeySecretName }}
-          - name: github-app-key-volume
-            mountPath: /app/key.pem
-            subPath: key.pem
-            readOnly: true
-          {{- end }}
-          {{- if .Values.config }}
-          - name: config
-            mountPath: /app/config.yml
-            subPath: config.yml
-            readOnly: true
-          {{- end }}
-          env:
-          - name: ARGOBOT_GH_WEBHOOK_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "argobot.webhookSecretName" . }}
-                key: webhook_secret
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["argobot"]
+        args: {{ .Values.command }}
+        resources:
+{{ .Values.webServer.resources | toYaml | indent 10 }}
+        ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+        volumeMounts:
+        {{- if .Values.githubApp.privateKeySecretName }}
+        - name: github-app-key-volume
+          mountPath: /app/key.pem
+          subPath: key.pem
+          readOnly: true
+        {{- end }}
+        {{- if .Values.config }}
+        - name: config
+          mountPath: /app/config.yml
+          subPath: config.yml
+          readOnly: true
+        {{- end }}
+        env:
+        - name: ARGOBOT_GH_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "argobot.webhookSecretName" . }}
+              key: webhook_secret

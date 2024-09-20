@@ -31,9 +31,9 @@ githubApp:
 
 service:
   type: ClusterIP
+  port: 8080
   # type: NodePort
   # nodePort: 31031
-  port: 8080
 
 config: |
   server:
@@ -54,3 +54,12 @@ config: |
     command: argocd
     server: argocd-server.argocd
     additional_args: --plaintext
+
+webServer:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

@@ -60,11 +60,14 @@ func TestTemplateBase(t *testing.T) {
 	helm.Upgrade(t, options, helmChartPath, releaseName)
 	defer helm.Delete(t, options, releaseName, true)
 
+	// k8s.expo
+
 	services := k8s.ListServices(t, kubectlOptions, v1.ListOptions{LabelSelector: fmt.Sprintf("app.kubernetes.io/name=argobot,app.kubernetes.io/instance=%s", releaseName)})
 	if len(services) < 1 {
 		t.Fatalf("expected at least 1 service, found %d", len(services))
 	}
 	for _, service := range services {
+		// service.
 		k8s.WaitUntilServiceAvailable(t, kubectlOptions, service.Name, 10, 1*time.Second)
 	}
 }

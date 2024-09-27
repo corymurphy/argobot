@@ -1,7 +1,8 @@
 package env
 
-type ArgoCliConfig struct {
+type ArgoConfig struct {
 	Command        string `yaml:"command"`
 	Server         string `yaml:"server"`
-	AdditionalArgs string `yaml:"additional_args"`
+	ApiBaseUrl     string `yaml:"apiBaseUrl"`
+	AdditionalArgs string `yaml:"AdditionalArguments"`
 }

@@ -1,16 +1,12 @@
 replicaCount: 1
 
 image:
-  # docker pull ghcr.io/corymurphy/argobot:0.0.1-alpha0
-  repository: ghcr.io/corymurphy/argobot
-  # repository: ubuntu 
+  repository: ghcr.io/corymurphy/containers/argobot
   pullPolicy: IfNotPresent
-  # pullPolicy: Never
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
 command:
-  # - "debug"
   - start
 
 nameOverride: ""
@@ -24,6 +20,9 @@ serviceAccount:
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
+
+argocd:
+  apiKeySecretName: argobot
 
 githubApp:
   webhookSecretName: argobot
@@ -46,14 +45,14 @@ config: |
       integration_id: 77423
 
   app_configuration:
-    pull_request_preamble: "I am echo bot."
-    data_directory: .data
-    private_key_file_path: /app/key.pem
+    dataDirectory: .data
+    privateKeyFilePath: /app/key.pem
 
-  argocli_config:
+  argoConfig:
     command: argocd
     server: argocd-server.argocd
-    additional_args: --plaintext
+    AdditionalArguments: --plaintext
+    apiBaseUrl: http://argocd-server.argocd.svc.cluster.local:80
 
 webServer:
   resources:
@@ -63,3 +62,5 @@ webServer:
     limits:
       cpu: 250m
       memory: 256Mi
+
+# TODO add integration_id validation

@@ -38,7 +38,7 @@ data:
       data_directory: .data
       private_key_file_path: /app/key.pem
     
-    argocli_config:
+    argoConfig:
       command: argocd
       server: argocd-server.argocd
       additional_args: --plaintext
@@ -138,4 +138,4 @@ spec:
           valueFrom:
             secretKeyRef:
               name: argobot
-              key: webhook_secret
+              key: webhookSecret

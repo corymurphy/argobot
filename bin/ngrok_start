@@ -1,5 +1,0 @@
-#!/bin/bash
-
-# ./bin/ngrok http --domain=smiling-master-marmot.ngrok-free.app 8080
-
-ngrok http 8080

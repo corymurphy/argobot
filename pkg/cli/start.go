@@ -38,7 +38,20 @@ var run = &cobra.Command{
 		config.Github.App.PrivateKey = string(content)
 		config.Github.App.WebhookSecret = os.Getenv(WebhookSecretEnvVar)
 
-		server.NewServer(config, logging.NewLogger(logging.Info), argocd.NewCliClient(config.ArgoCliConfig)).Start()
+		argoClient := &argocd.ApplicationsClient{
+			BaseUrl: config.ArgoConfig.ApiBaseUrl,
+		}
+
+		if apiKey, exists := os.LookupEnv("ARGOBOT_ARGOCD_API_KEY"); exists {
+			argoClient.Token = apiKey
+		}
+
+		server.NewServer(
+			config,
+			logging.NewLogger(logging.Debug),
+			argocd.NewCliClient(config.ArgoConfig),
+			argoClient,
+		).Start()
 	},
 }
 

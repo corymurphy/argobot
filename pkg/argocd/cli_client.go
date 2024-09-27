@@ -11,14 +11,14 @@ type CliClient struct {
 	Server        string
 	Command       cmd.Command
 	ArgoCDBinPath string
-	ArgoCliConfig env.ArgoCliConfig
+	ArgoConfig    env.ArgoConfig
 }
 
-func NewCliClient(config env.ArgoCliConfig) *CliClient {
+func NewCliClient(config env.ArgoConfig) *CliClient {
 	return &CliClient{
 		Server:        config.Server,
 		ArgoCDBinPath: config.Command,
-		ArgoCliConfig: config,
+		ArgoConfig:    config,
 		Command:       cmd.NewNonCachingShell(),
 	}
 }
@@ -32,8 +32,8 @@ func (c *CliClient) Plan(app string, sha string) (string, error) {
 		sha,
 	)
 
-	if c.ArgoCliConfig.AdditionalArgs != "" {
-		command = command + " " + c.ArgoCliConfig.AdditionalArgs
+	if c.ArgoConfig.AdditionalArgs != "" {
+		command = command + " " + c.ArgoConfig.AdditionalArgs
 	}
 
 	result, err := c.Command.Run(

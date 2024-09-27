@@ -24,7 +24,7 @@ import (
 )
 
 func Test_HealthCheck(t *testing.T) {
-	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), &argocd.MockClient{})
+	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), &argocd.MockClient{}, nil)
 	req, _ := http.NewRequest("GET", "/health", bytes.NewBuffer(nil))
 	w := httptest.NewRecorder()
 	s.Health(w, req)
@@ -37,12 +37,13 @@ func Test_HealthCheck(t *testing.T) {
 }`, string(body))
 }
 
-func Test_PRCommentHandler_ArgoPlanAppExists(t *testing.T) {
+func Test_PRCommentHandler(t *testing.T) {
 
 	requests := map[string]bool{
 		"/app/installations/345345345/access_tokens":     false,
 		"/repos/atlas8518/argocd-data/issues/1/comments": false,
 		"/repos/atlas8518/argocd-data/pulls/1":           false,
+		"/api/v1/applications/testapp/sync":              false,
 	}
 	mu := sync.Mutex{}
 
@@ -68,7 +69,7 @@ func Test_PRCommentHandler_ArgoPlanAppExists(t *testing.T) {
 
 	for _, testCase := range *NewServerTestCases(mockServer) {
 
-		s := server.NewServer(testCase.Config, logger, testCase.ArgoClient)
+		s := server.NewServer(testCase.Config, logger, testCase.PlanClient, testCase.ApplyClient)
 
 		w := httptest.NewRecorder()
 
@@ -89,11 +90,13 @@ func Test_PRCommentHandler_ArgoPlanAppExists(t *testing.T) {
 type ServerTestCase struct {
 	BodyPath           string
 	Config             *env.Config
+	PlanClient         argocd.PlanClient
+	ApplyClient        argocd.ApplyClient
 	ExpectedStatusCode uint
-	ArgoClient         argocd.Client
+	ExpectedRequests   map[string]bool
 }
 
-func NewMockArgoClient(planResponsePath string) argocd.Client {
+func NewMockPlanClient(planResponsePath string) argocd.PlanClient {
 	content, err := os.ReadFile(planResponsePath)
 	if err != nil {
 		panic(err)
@@ -117,10 +120,10 @@ func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 	config.Github.V3APIURL = mockServer.URL
 	config.Github.WebURL = mockServer.URL
 	config.Github.App.PrivateKey = string(content)
-	config.ArgoCliConfig.Server = strings.ReplaceAll(mockServer.URL, "http://", "")
-	config.ArgoCliConfig.Command = "echo"
+	config.ArgoConfig.Server = strings.ReplaceAll(mockServer.URL, "http://", "")
+	config.ArgoConfig.Command = "echo"
 	// TODO: add integration test for argocd cli
-	// config.ArgoCliConfig.Command = "docker run --network host --rm quay.io/argoproj/argocd:v2.12.3 argocd"
+	// config.ArgoConfig.Command = "docker run --network host --rm quay.io/argoproj/argocd:v2.12.3 argocd"
 
 	return &[]ServerTestCase{
 		{
@@ -131,8 +134,17 @@ func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 		{
 			BodyPath:           "../testdata/comments/pullrequest_comment_user_plan.json",
 			Config:             config,
+			PlanClient:         NewMockPlanClient("../testdata/argocd_plan_diff"),
 			ExpectedStatusCode: http.StatusOK,
-			ArgoClient:         NewMockArgoClient("../testdata/argocd_plan_diff"),
+		},
+		{
+			BodyPath: "../testdata/comments/pullrequest_comment_user_apply.json",
+			Config:   config,
+			ApplyClient: &argocd.ApplicationsClient{
+				Token:   "123",
+				BaseUrl: mockServer.URL,
+			},
+			ExpectedStatusCode: http.StatusOK,
 		},
 	}
 }
@@ -200,6 +212,12 @@ func mockServer(requests map[string]bool, mu *sync.Mutex, t *testing.T) *httptes
 		requests["/repos/atlas8518/argocd-data/pulls/1"] = true
 		mu.Unlock()
 		fmt.Fprint(w, string(response))
+	})
+	router.HandleFunc("/api/v1/applications/testapp/sync", func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requests["/api/v1/applications/testapp/sync"] = true
+		mu.Unlock()
+		fmt.Fprint(w, string(""))
 	})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		t.Error(r)

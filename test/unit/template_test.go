@@ -17,7 +17,7 @@ func TestTemplateBase(t *testing.T) {
 		},
 		// ValuesFiles: []string{testCase.ValuesPath},
 	}
-	actual := helm.RenderTemplate(t, options, "../../../charts/argobot", "test", nil)
+	actual := helm.RenderTemplate(t, options, "../../charts/argobot", "test", nil)
 
 	if *update {
 		t.Error("here")
@@ -32,8 +32,8 @@ func TestTemplateBase(t *testing.T) {
 	if string(expected) != actual {
 		// TODO: This is just temporary, i'm working on a better experience in a future pr
 		// in the meantime, use your own diff tool for debugging
-		os.WriteFile("../../../.debug/actual.yaml", []byte(actual), 0644)
-		os.WriteFile("../../../.debug/expected.yaml", []byte(expected), 0644)
+		os.WriteFile("../../.debug/actual.yaml", []byte(actual), 0644)
+		os.WriteFile("../../.debug/expected.yaml", []byte(expected), 0644)
 		t.Fatalf(`
 rendered output does not match
 

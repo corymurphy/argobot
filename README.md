@@ -5,28 +5,22 @@ GitHub bot for ArgoCD. Inspired by Atlantis for Terraform.
 ## Deploy
 
 ```shell
-helm repo add corymurphy https://corymurphy.github.io/argobot
+# TODO: update this to use Github Packages OCI registry
+kubectl create secret generic argobot \
+  --namespace argobot \
+  --content <kube-context> \
+  --from-file=key.pem=path/to/github_app_privatekey \
+  --from-literal=webhookSecret=<github_webhook_secret>
+
+helm install \
+  oci://ghcr.io/corymurphy/helm-charts/argobot argobot
 ```
 
 ## Develop
 
-Built using [palantir/go-githubapp](https://github.com/palantir/go-githubapp)
-
-Install minikube. [docs](https://minikube.sigs.k8s.io/docs/start/).
-
 ```shell
-# start minikube
-eval $(minikube -p minikube docker-env)
-./bin/minikube_start
-
-# enable ingress
-minikube addons enable ingress
-kubectl get pods -n ingress-nginx
-
-# test
-kubectl create deployment web --image=gcr.io/google-samples/hello-app:1.0
-kubectl expose deployment web --type=NodePort --port=8080
-minikube service web --url
+make test-helm
+make test
 ```
 
 ### Deploy argocd
@@ -35,17 +29,12 @@ minikube service web --url
 # deploy argocd
 helm dependency update charts/argocd/
 helm dependency update --skip-refresh charts/argocd/
-helm upgrade argocd --kube-context kind-kind --install --values charts/argocd/values.yaml --namespace argocd --create-namespace charts/argocd/
+helm upgrade argocd --kube-context kind-kind \
+  --install --namespace argocd --create-namespace \
+  --values charts/argocd/values.yaml charts/argocd/
 
 # connect to argocd
-kubectl port-forward --namespace argocd service/argocd-server 8000:80
-```
-
-### Deploy argobot
-
-```shell
-./bin/minikube_build_deploy
-./bin/expose
+kubectl port-forward --namespace argocd service/argocd-server 8081:80
 ```
 
 ## Planning

@@ -2,11 +2,11 @@ package integration
 
 import (
 	"fmt"
-	"math/rand"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/corymurphy/argobot/pkg/utils"
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -14,27 +14,17 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func random(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}
-
 func TestTemplateBase(t *testing.T) {
 	releaseName := "integration"
-	helmChartPath, _ := filepath.Abs("../../../charts/argobot")
+	helmChartPath, _ := filepath.Abs("../../charts/argobot")
 	kubectlOptions := k8s.NewKubectlOptions(*kubeContext, "", *kubeNamespace)
 
-	tag := random(8)
-	image := fmt.Sprintf("ghcr.io/corymurphy/argobot:%s", tag)
+	tag := utils.InsecureRandom(8)
+	image := fmt.Sprintf("ghcr.io/corymurphy/containers/argobot:%s", tag)
 	buildOptions := &docker.BuildOptions{
 		Tags: []string{image},
 	}
-	docker.Build(t, "../../../", buildOptions)
+	docker.Build(t, "../../", buildOptions)
 
 	shell.RunCommand(t, shell.Command{
 		Command: "kind",
@@ -44,6 +34,9 @@ func TestTemplateBase(t *testing.T) {
 			image,
 		},
 	})
+
+	k8s.CreateNamespaceE(t, kubectlOptions, *kubeNamespace)
+	k8s.KubectlApply(t, kubectlOptions, "../../.secrets/secrets.yaml")
 
 	options := &helm.Options{
 		KubectlOptions: kubectlOptions,

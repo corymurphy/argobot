@@ -64,7 +64,7 @@ web_url: %[1]s
 v3_api_url: %[1]s
 app:
   integration_id: 123456
-  webhook_secret: fc1b391fa17718cfdbf9497ec9bfe59
+  webhookSecret: fc1b391fa17718cfdbf9497ec9bfe59
 `, mockServer.URL)
 
 	var config githubapp.Config

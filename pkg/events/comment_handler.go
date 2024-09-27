@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/corymurphy/argobot/pkg/argocd"
 	"github.com/corymurphy/argobot/pkg/command"
@@ -33,9 +34,10 @@ const maxCommentLength = 32768
 
 type PRCommentHandler struct {
 	githubapp.ClientCreator
-	Config     *env.Config
-	Log        logging.SimpleLogging
-	ArgoClient argocd.Client
+	Config      *env.Config
+	Log         logging.SimpleLogging
+	PlanClient  argocd.PlanClient
+	ApplyClient argocd.ApplyClient
 }
 
 func (h *PRCommentHandler) Handles() []string {
@@ -85,19 +87,40 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 		}
 	}
 
+	// TODO: apply and plan async and respond to hook immediately
+
 	if comment.Command.Name == command.Plan {
-		plan, err := h.ArgoClient.Plan(comment.Command.Application, *sha)
+		plan, err := h.PlanClient.Plan(comment.Command.Application, *sha)
 		if err != nil {
 			return err
 		}
 		h.Log.Info(plan)
-		return h.CreateComment(client, ctx, repo, prNum, plan, comment.Command.Name.String())
+		return h.CreateBlockComment(client, ctx, repo, prNum, plan, comment.Command.Name.String(), "```diff")
+	}
+
+	if comment.Command.Name == command.Apply {
+		// TODO: return success and run apply in background
+		// TODO: validate that the PR is in an approved/mergeable state
+		apply, err := h.ApplyClient.Apply(comment.Command.Application, *sha)
+		if err != nil {
+			h.Log.Err("argoclient failed while applying %w", err)
+			return err
+		}
+		h.Log.Info(apply)
+		return h.CreateComment(client, ctx, repo, prNum, fmt.Sprintf("applied %s sucessfully", comment.Command.Application))
 	}
 
 	return errors.Errorf("unsupported argo command")
 }
 
-func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context, repo *github.Repository, pullNum int, comment string, command string) error {
+// TODO
+func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context, repo *github.Repository, pullNum int, comment string) error {
+	h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", repo.GetOwner().GetLogin(), repo.GetName(), pullNum)
+	_, _, err := vsc.Issues.CreateComment(ctx, repo.GetOwner().GetLogin(), repo.GetName(), pullNum, &github.IssueComment{Body: &comment})
+	return err
+}
+
+func (h *PRCommentHandler) CreateBlockComment(vsc *github.Client, ctx context.Context, repo *github.Repository, pullNum int, comment string, command string, blockPrefix string) error {
 	var sepStart string
 
 	sepEnd := "\n```\n</details>" +
@@ -105,16 +128,16 @@ func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context
 
 	if command != "" {
 		sepStart = fmt.Sprintf("Continued %s output from previous comment.\n<details><summary>Show Output</summary>\n\n", command) +
-			"```diff\n"
+			blockPrefix + "\n"
 	} else {
 		sepStart = "Continued from previous comment.\n<details><summary>Show Output</summary>\n\n" +
-			"```diff\n"
+			blockPrefix + "\n"
 	}
 
-	comments := SplitComment(comment, maxCommentLength, sepEnd, sepStart)
+	comments := SplitComment(comment, maxCommentLength, sepEnd, sepStart, blockPrefix)
 	for i := range comments {
 		h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", repo.GetOwner().GetLogin(), repo.GetName(), pullNum)
-		_, _, err := vsc.Issues.CreateComment(ctx, repo.GetOwner().GetLogin(), repo.GetName(), pullNum, &github.IssueComment{Body: &comments[i]})
+		err := h.CreateComment(vsc, ctx, repo, pullNum, comments[i])
 		if err != nil {
 			return err
 		}
@@ -122,9 +145,13 @@ func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context
 	return nil
 }
 
-func SplitComment(comment string, maxSize int, sepEnd string, sepStart string) []string {
+func SplitComment(comment string, maxSize int, sepEnd string, sepStart string, blockPrefix string) []string {
+	if strings.TrimSpace(comment) == "" {
+		return []string{"No diff detected, resources are up to date."}
+	}
+
 	if len(comment) <= maxSize {
-		return []string{comment}
+		return []string{blockPrefix + "\n" + comment + "\n```"}
 	}
 
 	maxWithSep := maxSize - len(sepEnd) - len(sepStart)

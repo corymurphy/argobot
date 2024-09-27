@@ -33,7 +33,7 @@ type CommentParser struct {
 func NewCommentParser(logger logging.SimpleLogging) *CommentParser {
 	return &CommentParser{
 		Log:           logger,
-		AllowCommands: []command.Name{command.Help, command.Plan},
+		AllowCommands: []command.Name{command.Help, command.Plan, command.Apply},
 	}
 }
 
@@ -138,6 +138,10 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 		flagSet = pflag.NewFlagSet(command.Plan.String(), pflag.ContinueOnError)
 		flagSet.SetOutput(io.Discard)
 		flagSet.StringVarP(&app, applicationFlagLong, applicationFlagShort, "", "ArgoCD application to run plan against")
+	case command.Apply.String():
+		flagSet = pflag.NewFlagSet(command.Apply.String(), pflag.ContinueOnError)
+		flagSet.SetOutput(io.Discard)
+		flagSet.StringVarP(&app, applicationFlagLong, applicationFlagShort, "", "ArgoCD application to run plan against")
 	default:
 		c.Log.Debug("failed to parse command %s", cmd)
 		return &CommentParseResult{
@@ -183,13 +187,14 @@ func (e *CommentParser) isAllowedCommand(cmd string) bool {
 }
 
 func helpComment() string {
-	return `
+	return "```shell\n" + `
 Usage: argo COMMAND [ARGS]...
 
   Allows you to interact with ArgoCD from a Pull Request.
 
 Commands:
   help 		Shows this message
-  plan --application myapp
-`
+  plan 		--application myapp
+  apply 	--application myapp
+` + "```"
 }

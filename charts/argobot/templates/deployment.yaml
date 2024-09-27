@@ -67,4 +67,9 @@ spec:
           valueFrom:
             secretKeyRef:
               name: {{ template "argobot.webhookSecretName" . }}
-              key: webhook_secret
+              key: webhookSecret
+        - name: ARGOBOT_ARGOCD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.argocd.apiKeySecretName }}
+              key: arocdApiKey

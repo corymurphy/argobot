@@ -1,4 +1,8 @@
 argo-cd:
+
+  global:
+    domain: localhost
+    
   server:
     ingress:
       enabled: true
@@ -10,6 +14,13 @@ argo-cd:
         - argocd.local
 
   configs:
+    cm:
+      admin.enabled: true
+      accounts.admin: apiKey, login
     params:
       server.insecure: true
-      server.disable.auth: true
+      server.disable.auth: false
+
+
+  notifications:
+    argocdUrl: http://localhost:8081

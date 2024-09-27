@@ -97,3 +97,36 @@ func Test_PlanHasApplicationName(t *testing.T) {
 		t.Errorf("expected %s, got %s", "myapp", result.Command.Application)
 	}
 }
+
+func Test_ApplyHasApplicationName(t *testing.T) {
+	serialized := `
+	{
+		"action": "created",
+		"issue": {
+			"pull_request": {
+				"url": "https://api.github.com/example/example"
+			}
+		},
+		"comment" : {
+			"body": "argo apply --application myapp",
+			"user": {
+				"login": "githubuser"
+			}
+		}
+	}
+	`
+
+	var event github.IssueCommentEvent
+	json.Unmarshal([]byte(serialized), &event)
+	parser := NewCommentParser(logging.NewLogger(logging.Silent))
+
+	result := parser.Parse(event)
+	if result.Command.Name != command.Apply {
+		t.Errorf("expected %s, got %s", command.Apply, &result.Command.Name)
+	}
+
+	if result.Command.Application != "myapp" {
+		t.Log(result.Command)
+		t.Errorf("expected %s, got %s", "myapp", result.Command.Application)
+	}
+}

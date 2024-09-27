@@ -1,22 +1,29 @@
 TIMESTAMP=tmp-$(shell date +%s )
-
-.PHONY: update
-update:
-	minikube -p minikube docker-env
-	minikube image build --build-env=ARGOBOT_VERSION=0.0.1 --build-env=ARGOBOT_COMMIT=f943335d0c6df3f1aaadad50b57f1acf90145975 . -t ghcr.io/corymurphy/argobot:$(TIMESTAMP)
-	helm upgrade --install --kube-context minikube --create-namespace --set image.pullPolicy=Never --set image.tag=$(TIMESTAMP) --namespace argobot argobot ./charts/argobot/;
+ARGOBOT_VERSION ?= $(shell cat version)
+ARGOBOT_COMMIT ?= $(shell git rev-parse HEAD)
 
 expose:
 	ngrok http 8080
 
 build:
+	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X 'main.version=$(ARGOBOT_VERSION)' -X 'main.commit=$(ARGOBOT_COMMIT)'" -v -o argobot ./cmd/argobot
 
+.PHONY: version
+version:
+	echo $(ARGOBOT_VERSION)
+
+.PHONY: test
 test:
-	go test ./...
+	go test ./pkg/...
 
 test-helm:
 	go clean -testcache;
-	go test ./pkg/test/integration/
+	go test ./test/integration/
 
 build-argocli:
 	docker build -t ghcr.io/corymurphy/argocli --target argocli .
+
+.PHONY: dev-install
+dev-install:
+	go clean -testcache
+	go test -run Test_LocalDevelopmentInstall ./test/dev

@@ -1,3 +1,0 @@
-#!/bin/bash
-helm uninstall argobot --namespace argobot;
-helm upgrade --install --create-namespace --namespace argobot --set "image.pullPolicy=Never" argobot ./charts/argobot/

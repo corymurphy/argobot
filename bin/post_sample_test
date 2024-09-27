@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# User-Agent: GitHub-Hookshot/5b120d0
-# X-GitHub-Delivery: d81f3c40-39df-11ee-9749-07caddaead01
-# X-GitHub-Event: issue_comment
-# X-GitHub-Hook-ID: 242812040
-# X-GitHub-Hook-Installation-Target-ID: 77423
-# X-GitHub-Hook-Installation-Target-Type: integration
-# X-Hub-Signature: sha1=3da163d64d2826642bb05a43777b8f4c9a570ee3
-# X-Hub-Signature-256: sha256=ae468d703c5c773530ffa7e8973c5e6692298ad77a46816de625627d92f702c7
-
 curl -vX POST http://localhost:8080/api/github/hook \
   -d @samples/pullrequest_comment_test.json \
   --header "Content-Type: application/json" \

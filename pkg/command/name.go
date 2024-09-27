@@ -5,13 +5,15 @@ import "fmt"
 type Name int
 
 const (
-	// Apply Name = iota
-	Plan Name = iota
-	Help Name = iota
+	Apply Name = iota
+	Plan  Name = iota
+	Help  Name = iota
 )
 
 func ParseCommandName(name string) (Name, error) {
 	switch name {
+	case "apply":
+		return Apply, nil
 	case "plan":
 		return Plan, nil
 	case "help":
@@ -24,6 +26,8 @@ func (c Name) String() string {
 	switch c {
 	case Plan:
 		return "plan"
+	case Apply:
+		return "apply"
 	}
 	return ""
 }

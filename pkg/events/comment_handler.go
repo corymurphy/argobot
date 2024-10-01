@@ -25,6 +25,7 @@ import (
 	"github.com/corymurphy/argobot/pkg/command"
 	"github.com/corymurphy/argobot/pkg/env"
 	"github.com/corymurphy/argobot/pkg/logging"
+	"github.com/corymurphy/argobot/pkg/models"
 	"github.com/google/go-github/v53/github"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
@@ -77,6 +78,15 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	sha := pr.GetHead().SHA
 	h.Log.Debug("comment was for sha %s", *sha)
 
+	request := models.NewPullRequestComment(
+		*sha,
+		models.PullRequest{
+			Number: prNum,
+			Name:   repoName,
+			Owner:  repoOwner,
+		},
+	)
+
 	if (comment.Ignore || comment.ImmediateResponse) && comment.HasResponseComment {
 		prComment := github.IssueComment{
 			Body: &comment.CommentResponse,
@@ -95,32 +105,30 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 			return err
 		}
 		h.Log.Info(plan)
-		return h.CreateBlockComment(client, ctx, repo, prNum, plan, comment.Command.Name.String(), "```diff")
+		return h.CreateBlockComment(client, ctx, request.Pull, plan, comment.Command.Name.String(), "```diff")
 	}
 
 	if comment.Command.Name == command.Apply {
-		// TODO: return success and run apply in background
-		// TODO: validate that the PR is in an approved/mergeable state
-		apply, err := h.ApplyClient.Apply(comment.Command.Application, *sha)
+		apply := NewApplyRunner(client, h.Config, h.Log, h.ApplyClient)
+		response, err := apply.Run(ctx, comment.Command, request)
 		if err != nil {
-			h.Log.Err("argoclient failed while applying %w", err)
+			h.Log.Err("unable to apply %w", err)
 			return err
 		}
-		h.Log.Info(apply)
-		return h.CreateComment(client, ctx, repo, prNum, fmt.Sprintf("applied %s sucessfully", comment.Command.Application))
+		return h.CreateComment(client, ctx, request.Pull, response.Message)
 	}
 
 	return errors.Errorf("unsupported argo command")
 }
 
 // TODO
-func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context, repo *github.Repository, pullNum int, comment string) error {
-	h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", repo.GetOwner().GetLogin(), repo.GetName(), pullNum)
-	_, _, err := vsc.Issues.CreateComment(ctx, repo.GetOwner().GetLogin(), repo.GetName(), pullNum, &github.IssueComment{Body: &comment})
+func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context, pull models.PullRequest, comment string) error {
+	h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", pull.Owner, pull.Name, pull.Number)
+	_, _, err := vsc.Issues.CreateComment(ctx, pull.Owner, pull.Name, pull.Number, &github.IssueComment{Body: &comment})
 	return err
 }
 
-func (h *PRCommentHandler) CreateBlockComment(vsc *github.Client, ctx context.Context, repo *github.Repository, pullNum int, comment string, command string, blockPrefix string) error {
+func (h *PRCommentHandler) CreateBlockComment(vsc *github.Client, ctx context.Context, pull models.PullRequest, comment string, command string, blockPrefix string) error {
 	var sepStart string
 
 	sepEnd := "\n```\n</details>" +
@@ -136,8 +144,8 @@ func (h *PRCommentHandler) CreateBlockComment(vsc *github.Client, ctx context.Co
 
 	comments := SplitComment(comment, maxCommentLength, sepEnd, sepStart, blockPrefix)
 	for i := range comments {
-		h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", repo.GetOwner().GetLogin(), repo.GetName(), pullNum)
-		err := h.CreateComment(vsc, ctx, repo, pullNum, comments[i])
+		h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", pull.Owner, pull.Name, pull.Number)
+		err := h.CreateComment(vsc, ctx, pull, comments[i])
 		if err != nil {
 			return err
 		}

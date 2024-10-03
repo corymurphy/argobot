@@ -24,7 +24,7 @@ import (
 )
 
 func Test_HealthCheck(t *testing.T) {
-	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), &argocd.MockClient{}, nil)
+	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), &argocd.MockClient{}, nil, nil)
 	req, _ := http.NewRequest("GET", "/health", bytes.NewBuffer(nil))
 	w := httptest.NewRecorder()
 	s.Health(w, req)
@@ -69,7 +69,7 @@ func Test_PRCommentHandler(t *testing.T) {
 
 	for _, testCase := range *NewServerTestCases(mockServer) {
 
-		s := server.NewServer(testCase.Config, logger, testCase.PlanClient, testCase.ApplyClient)
+		s := server.NewServer(testCase.Config, logger, testCase.PlanClient, testCase.ApplyClient, nil)
 
 		w := httptest.NewRecorder()
 

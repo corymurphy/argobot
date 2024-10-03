@@ -51,6 +51,7 @@ var run = &cobra.Command{
 			logging.NewLogger(logging.Debug),
 			argocd.NewCliClient(config.ArgoConfig),
 			argoClient,
+			argoClient,
 		).Start()
 	},
 }

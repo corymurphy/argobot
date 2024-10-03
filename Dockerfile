@@ -1,6 +1,6 @@
 # gcr.io/distroless/static-debian11
 
-FROM golang:1.22.7-alpine AS builder
+FROM golang:1.22.8-alpine AS builder
 
 ARG ALPINE_TAG=latest
 
@@ -19,7 +19,8 @@ RUN curl -sSL -o /tmp/argocd-linux-amd64 https://github.com/argoproj/argo-cd/rel
 
 COPY go.mod go.sum ./
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN go mod graph | awk '{if ($1 !~ "@") print $2}' | xargs go get
+# RUN go mod graph | awk '{if ($1 !~ "@") print $2}' | xargs go get
+RUN go mod tidy
 
 # RUN --mount=type=cache,target=/go/pkg/mod \
 #     --mount=type=cache,target=/root/.cache/go-build \

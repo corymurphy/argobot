@@ -19,10 +19,11 @@ type Server struct {
 	PRCommentHandler http.Handler
 	PlanClient       argocd.PlanClient
 	ApplyClient      argocd.ApplyClient
+	ArgoClient       argocd.ApplicationsClient
 	githubapp.ClientCreator
 }
 
-func NewServer(config *env.Config, logger logging.SimpleLogging, planClient argocd.PlanClient, applyClient argocd.ApplyClient) *Server {
+func NewServer(config *env.Config, logger logging.SimpleLogging, planClient argocd.PlanClient, applyClient argocd.ApplyClient, argoClient *argocd.ApplicationsClient) *Server {
 
 	cc, err := githubapp.NewDefaultCachingClientCreator(
 		config.Github,
@@ -42,6 +43,7 @@ func NewServer(config *env.Config, logger logging.SimpleLogging, planClient argo
 		Log:           logger,
 		PlanClient:    planClient,
 		ApplyClient:   applyClient,
+		ArgoClient:    *argoClient,
 	}
 
 	webhookHandler := githubapp.NewDefaultEventDispatcher(config.Github, prCommentHandler)
@@ -53,6 +55,7 @@ func NewServer(config *env.Config, logger logging.SimpleLogging, planClient argo
 		PRCommentHandler: webhookHandler,
 		PlanClient:       planClient,
 		ApplyClient:      applyClient,
+		ArgoClient:       *argoClient,
 	}
 }
 

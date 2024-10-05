@@ -18,13 +18,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 
 	"github.com/corymurphy/argobot/pkg/argocd"
+	argo "github.com/corymurphy/argobot/pkg/argocd/models"
 	"github.com/corymurphy/argobot/pkg/command"
 	"github.com/corymurphy/argobot/pkg/env"
 	"github.com/corymurphy/argobot/pkg/logging"
 	"github.com/corymurphy/argobot/pkg/models"
+	"github.com/corymurphy/argobot/pkg/utils"
 	"github.com/google/go-github/v53/github"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
@@ -76,11 +77,11 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 		return err
 	}
 
-	sha := pr.GetHead().SHA
-	h.Log.Debug("comment was for sha %s", *sha)
+	revision := pr.GetHead().SHA
+	h.Log.Debug("comment was for sha %s", *revision)
 
 	request := models.NewPullRequestComment(
-		*sha,
+		*revision,
 		models.PullRequest{
 			Number: prNum,
 			Name:   repoName,
@@ -117,15 +118,13 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	}
 
 	if comment.Command.Name == command.Plan {
-		plan, err := h.PlanClient.Plan(comment.Command.Application, *sha)
+		plan, err := h.PlanClient.Plan(comment.Command.Application, *revision)
+		// plan, err := h.Plan(ctx, comment.Command.Application, *revision)
 		if err != nil {
 			return err
 		}
 		msg := fmt.Sprintf("argocd plan for `%s`\n\n", comment.Command.Application) + "```diff\n" + plan + "\n```"
 		return h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
-		// prefix
-		// return h.CreateBlockComment(client, ctx, request.Pull, prefix, plan, comment.Command.Name.String(), "```diff")
-
 	}
 
 	if comment.Command.Name == command.Apply {
@@ -138,11 +137,6 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 			}
 			msg := fmt.Sprintf("apply result for `%s`\n\n", comment.Command.Application) + "```\n" + response.Message + "\n```"
 			h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
-			// plan = "```diff\n" + plan + "\n```"
-			// plan = fmt.Sprintf("===== %s ======\n\n", comment.Command.Application) + plan
-			// h.CreateComment(client, ctx, request.Pull, plan, comment.Command.Name.String())
-
-			// h.CreateComment(client, ctx, request.Pull, response.Message)
 		}()
 		return nil
 	}
@@ -150,45 +144,33 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	return errors.Errorf("unsupported argo command")
 }
 
-// TODO move this to a separate module
-// func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context, pull models.PullRequest, comment string) error {
-// 	h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", pull.Owner, pull.Name, pull.Number)
-// 	_, _, err := vsc.Issues.CreateComment(ctx, pull.Owner, pull.Name, pull.Number, &github.IssueComment{Body: &comment})
-// 	return err
-// }
+// TODO: this is just temporary while i build the proof of concept
+func (h *PRCommentHandler) Plan(ctx context.Context, name string, revision string) (string, error) {
+	var plan string
+	var resources argo.ApplicationManagedResourcesResponse // http://localhost:8081/api/v1/applications/helloworld/managed-resources
+	// var app argo.ApplicationApplicationResponse
 
-// TODO refactor signature
-// func (h *PRCommentHandler) CreateComment(vsc *github.Client, ctx context.Context, pull models.PullRequest, prefix string, comment string, command string, blockPrefix string) error {
-// 	var sepStart string
+	resources, err := h.ArgoClient.ManagedResources(name)
 
-// 	sepEnd := "\n```\n</details>" +
-// 		"\n<br>\n\n**Warning**: Output length greater than max comment size. Continued in next comment."
+	if err != nil {
+		return plan, err
+	}
 
-// 	if command != "" {
-// 		sepStart = fmt.Sprintf("Continued %s output from previous comment.\n<details><summary>Show Output</summary>\n\n", command) +
-// 			"```diff\n"
-// 	} else {
-// 		sepStart = "Continued from previous comment.\n<details><summary>Show Output</summary>\n\n" +
-// 			"```diff\n"
-// 	}
+	live, err := h.ArgoClient.Get(name)
 
-// 	truncationHeader := "\n```\n</details>" +
-// 		"\n<br>\n\n**Warning**: Command output is larger than the maximum number of comments per command. Output truncated.\n\n[..]\n"
+	if err != nil {
+		return plan, err
+	}
 
-// 	comments := SplitComment(comment, maxCommentLength, sepEnd, sepStart, 100, truncationHeader)
-// 	for i := range comments {
-// 		// if i == 0 {
-// 		// 	comments[i] = comments[i]
-// 		// }
-// 		h.Log.Debug("POST /repos/%s/%s/issues/%d/comments", pull.Owner, pull.Name, pull.Number)
-// 		err := h.CreateComment(vsc, ctx, pull, comments[i])
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
+	target, err := h.ArgoClient.GetManifest(name, revision)
+	if err != nil {
+		return plan, err
+	}
 
+	return argocd.Plan(ctx, &live, &resources, &target, revision)
+}
+
+// TODO move this to another module
 func (h *PRCommentHandler) CreateComment(client *github.Client, ctx context.Context, pull models.PullRequest, comment string, command string) error {
 	h.Log.Debug("Creating comment on GitHub pull request %d", pull.Number)
 	var sepStart string
@@ -207,7 +189,7 @@ func (h *PRCommentHandler) CreateComment(client *github.Client, ctx context.Cont
 	truncationHeader := "\n```\n</details>" +
 		"\n<br>\n\n**Warning**: Command output is larger than the maximum number of comments per command. Output truncated.\n\n[..]\n"
 
-	comments := SplitComment(comment, maxCommentLength, sepEnd, sepStart, 100, truncationHeader)
+	comments := utils.SplitComment(comment, maxCommentLength, sepEnd, sepStart, 100, truncationHeader)
 	for i := range comments {
 		_, resp, err := client.Issues.CreateComment(ctx, pull.Owner, pull.Name, pull.Number, &github.IssueComment{Body: &comments[i]})
 		if resp != nil {
@@ -219,67 +201,3 @@ func (h *PRCommentHandler) CreateComment(client *github.Client, ctx context.Cont
 	}
 	return nil
 }
-
-func SplitComment(comment string, maxSize int, sepEnd string, sepStart string, maxCommentsPerCommand int, truncationHeader string) []string {
-	if len(comment) <= maxSize {
-		return []string{comment}
-	}
-
-	// No comment contains both sepEnd and truncationHeader, so we only have to count their max.
-	maxWithSep := maxSize - max(len(sepEnd), len(truncationHeader)) - len(sepStart)
-	var comments []string
-	numPotentialComments := int(math.Ceil(float64(len(comment)) / float64(maxWithSep)))
-	var numComments int
-	if maxCommentsPerCommand == 0 {
-		numComments = numPotentialComments
-	} else {
-		numComments = min(numPotentialComments, maxCommentsPerCommand)
-	}
-	isTruncated := numComments < numPotentialComments
-	upTo := len(comment)
-	for len(comments) < numComments {
-		downFrom := max(0, upTo-maxWithSep)
-		portion := comment[downFrom:upTo]
-		if len(comments)+1 != numComments {
-			portion = sepStart + portion
-		} else if len(comments)+1 == numComments && isTruncated {
-			portion = truncationHeader + portion
-		}
-		if len(comments) != 0 {
-			portion = portion + sepEnd
-		}
-		comments = append([]string{portion}, comments...)
-		upTo = downFrom
-	}
-	return comments
-}
-
-// func SplitComment(prefix string, comment string, maxSize int, sepEnd string, sepStart string, blockPrefix string) []string {
-// 	if strings.TrimSpace(comment) == "" {
-// 		return []string{"No diff detected, resources are up to date."}
-// 	}
-
-// 	if len(comment) <= maxSize {
-// 		return []string{comment}
-// 	}
-
-// 	// if len(blockPrefix+"\n"+comment+"\n```") <= maxSize {
-// 	// 	return []string{blockPrefix + "\n" + comment + "\n```"}
-// 	// }
-
-// 	maxWithSep := maxSize - len(sepEnd) - len(sepStart)
-// 	var comments []string
-// 	numComments := int(math.Ceil(float64(len(comment)) / float64(maxWithSep)))
-// 	for i := 0; i < numComments; i++ {
-// 		upTo := min(len(comment), (i+1)*maxWithSep)
-// 		portion := comment[i*maxWithSep : upTo]
-// 		if i < numComments-1 {
-// 			portion += sepEnd
-// 		}
-// 		if i > 0 {
-// 			portion = sepStart + portion
-// 		}
-// 		comments = append(comments, portion)
-// 	}
-// 	return comments
-// }

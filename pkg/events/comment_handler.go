@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
 	"github.com/corymurphy/argobot/pkg/argocd"
-	argo "github.com/corymurphy/argobot/pkg/argocd/models"
 	"github.com/corymurphy/argobot/pkg/command"
 	"github.com/corymurphy/argobot/pkg/env"
 	"github.com/corymurphy/argobot/pkg/logging"
@@ -37,8 +37,6 @@ type PRCommentHandler struct {
 	githubapp.ClientCreator
 	Config      *env.Config
 	Log         logging.SimpleLogging
-	PlanClient  argocd.PlanClient
-	ApplyClient argocd.ApplyClient
 	ArgoClient  argocd.ApplicationsClient
 	TestingMode bool
 }
@@ -103,6 +101,8 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 
 	// TODO: apply and plan async and respond to hook immediately
 
+	// TODO: move this to startup and cache?
+
 	if comment.Command.Application == "" {
 		h.Log.Info(fmt.Sprintf("app %s", comment.Command.Application))
 
@@ -118,21 +118,28 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	}
 
 	if comment.Command.Name == command.Plan {
-		plan, err := h.PlanClient.Plan(comment.Command.Application, *revision)
-		// plan, err := h.Plan(ctx, comment.Command.Application, *revision)
+		plan, diff, err := h.Plan(ctx, comment.Command.Application, *revision)
 		if err != nil {
+			h.Log.Err("unable to plan: %w %s", err, plan)
 			return err
 		}
-		msg := fmt.Sprintf("argocd plan for `%s`\n\n", comment.Command.Application) + "```diff\n" + plan + "\n```"
+		var msg string
+		if diff {
+			msg = fmt.Sprintf("argocd plan for `%s`\n\n", comment.Command.Application) + "```diff\n" + plan + "\n```"
+		} else {
+			msg = "no diff detected, current state is up to date with this revision."
+			h.Log.Info(plan)
+		}
+
 		return h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
 	}
 
 	if comment.Command.Name == command.Apply {
 		go func() {
-			apply := NewApplyRunner(client, h.Config, h.Log, h.ApplyClient)
+			apply := NewApplyRunner(client, h.Config, h.Log, &h.ArgoClient)
 			response, err := apply.Run(ctx, comment.Command, request)
 			if err != nil {
-				h.Log.Err("unable to apply %w", err)
+				h.Log.Err("unable to apply %w %s", err)
 				return
 			}
 			msg := fmt.Sprintf("apply result for `%s`\n\n", comment.Command.Application) + "```\n" + response.Message + "\n```"
@@ -145,29 +152,39 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 }
 
 // TODO: this is just temporary while i build the proof of concept
-func (h *PRCommentHandler) Plan(ctx context.Context, name string, revision string) (string, error) {
+func (h *PRCommentHandler) Plan(ctx context.Context, name string, revision string) (string, bool, error) {
 	var plan string
-	var resources argo.ApplicationManagedResourcesResponse // http://localhost:8081/api/v1/applications/helloworld/managed-resources
+	var diff bool = false
+	// var resources argo.ApplicationManagedResourcesResponse // http://localhost:8081/api/v1/applications/helloworld/managed-resources
 	// var app argo.ApplicationApplicationResponse
+
+	var resources *application.ManagedResourcesResponse
 
 	resources, err := h.ArgoClient.ManagedResources(name)
 
 	if err != nil {
-		return plan, err
+		return plan, diff, err
 	}
 
 	live, err := h.ArgoClient.Get(name)
 
 	if err != nil {
-		return plan, err
+		return plan, diff, err
 	}
 
 	target, err := h.ArgoClient.GetManifest(name, revision)
 	if err != nil {
-		return plan, err
+		return plan, diff, err
 	}
 
-	return argocd.Plan(ctx, &live, &resources, &target, revision)
+	settings, err := h.ArgoClient.GetSettings()
+	if err != nil {
+		return plan, diff, err
+	}
+
+	// h.Log.Info(l)
+
+	return argocd.Plan(ctx, &settings, live, resources, target, revision, h.Log)
 }
 
 // TODO move this to another module

@@ -12,10 +12,7 @@ ENV ARGOBOT_COMMIT=${ARGOBOT_COMMIT}
 WORKDIR /app
 
 RUN apk add --no-cache \
-        bash~=5.2 \
-        curl
-
-RUN curl -sSL -o /tmp/argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        bash~=5.2
 
 COPY go.mod go.sum ./
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -39,23 +36,23 @@ RUN addgroup argobot && \
     chmod g=u /etc/passwd
 
 
-FROM base as argocli
+# FROM base as release
 
-COPY --from=builder /tmp/argocd-linux-amd64 /tmp/argocd-linux-amd64
-RUN install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd && rm -f /tmp/argocd-linux-amd64
+# COPY --from=builder /tmp/argocd-linux-amd64 /tmp/argocd-linux-amd64
+# RUN install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd && rm -f /tmp/argocd-linux-amd64
 
-RUN apk add --no-cache \
-        ca-certificates \
-        git
+# RUN apk add --no-cache \
+#         ca-certificates \
+#         git
 
 RUN mkdir /app && \
     chown argobot:argobot /app
 
 WORKDIR /app
 
-USER argobot
+# USER argobot
 
-FROM argocli
+# FROM argocli
 
 USER root
 

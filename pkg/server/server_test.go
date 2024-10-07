@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 
@@ -24,7 +23,7 @@ import (
 )
 
 func Test_HealthCheck(t *testing.T) {
-	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), &argocd.MockClient{}, nil, nil)
+	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), nil)
 	req, _ := http.NewRequest("GET", "/health", bytes.NewBuffer(nil))
 	w := httptest.NewRecorder()
 	s.Health(w, req)
@@ -69,7 +68,9 @@ func Test_PRCommentHandler(t *testing.T) {
 
 	for _, testCase := range *NewServerTestCases(mockServer) {
 
-		s := server.NewServer(testCase.Config, logger, testCase.PlanClient, testCase.ApplyClient, nil)
+		// TODO: fix this signature
+		// s := server.NewServer(testCase.Config, logger, testCase.ApplyClient)
+		s := server.NewServer(testCase.Config, logger, nil)
 
 		w := httptest.NewRecorder()
 
@@ -96,17 +97,6 @@ type ServerTestCase struct {
 	ExpectedRequests   map[string]bool
 }
 
-func NewMockPlanClient(planResponsePath string) argocd.PlanClient {
-	content, err := os.ReadFile(planResponsePath)
-	if err != nil {
-		panic(err)
-	}
-	return &argocd.MockClient{
-		PlanResponse: string(content),
-		Error:        nil,
-	}
-}
-
 func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 
 	config, err := env.ReadConfig("../testdata/argobot_config.yaml")
@@ -120,10 +110,7 @@ func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 	config.Github.V3APIURL = mockServer.URL
 	config.Github.WebURL = mockServer.URL
 	config.Github.App.PrivateKey = string(content)
-	config.ArgoConfig.Server = strings.ReplaceAll(mockServer.URL, "http://", "")
-	config.ArgoConfig.Command = "echo"
-	// TODO: add integration test for argocd cli
-	// config.ArgoConfig.Command = "docker run --network host --rm quay.io/argoproj/argocd:v2.12.3 argocd"
+	// config.ArgoConfig.Server = strings.ReplaceAll(mockServer.URL, "http://", "")
 
 	return &[]ServerTestCase{
 		{
@@ -132,9 +119,10 @@ func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 			ExpectedStatusCode: http.StatusOK,
 		},
 		{
-			BodyPath:           "../testdata/comments/pullrequest_comment_user_plan.json",
-			Config:             config,
-			PlanClient:         NewMockPlanClient("../testdata/argocd_plan_diff"),
+			BodyPath: "../testdata/comments/pullrequest_comment_user_plan.json",
+			Config:   config,
+			// PlanClient:         NewMockPlanClient("../testdata/argocd_plan_diff"),
+
 			ExpectedStatusCode: http.StatusOK,
 		},
 		{

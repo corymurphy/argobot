@@ -23,7 +23,7 @@ type Server struct {
 	githubapp.ClientCreator
 }
 
-func NewServer(config *env.Config, logger logging.SimpleLogging, planClient argocd.PlanClient, applyClient argocd.ApplyClient, argoClient *argocd.ApplicationsClient) *Server {
+func NewServer(config *env.Config, logger logging.SimpleLogging, argoClient *argocd.ApplicationsClient) *Server {
 
 	cc, err := githubapp.NewDefaultCachingClientCreator(
 		config.Github,
@@ -41,8 +41,6 @@ func NewServer(config *env.Config, logger logging.SimpleLogging, planClient argo
 		ClientCreator: cc,
 		Config:        config,
 		Log:           logger,
-		PlanClient:    planClient,
-		ApplyClient:   applyClient,
 		ArgoClient:    *argoClient,
 	}
 
@@ -53,8 +51,6 @@ func NewServer(config *env.Config, logger logging.SimpleLogging, planClient argo
 		Log:              logger,
 		ClientCreator:    cc,
 		PRCommentHandler: webhookHandler,
-		PlanClient:       planClient,
-		ApplyClient:      applyClient,
 		ArgoClient:       *argoClient,
 	}
 }

@@ -49,8 +49,6 @@ var run = &cobra.Command{
 		server.NewServer(
 			config,
 			logging.NewLogger(logging.Debug),
-			argocd.NewCliClient(config.ArgoConfig),
-			argoClient,
 			argoClient,
 		).Start()
 	},

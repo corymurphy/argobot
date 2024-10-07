@@ -1,11 +1,11 @@
 package argocd
 
 import (
-	models "github.com/corymurphy/argobot/pkg/argocd/models"
+	argoappv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func LiveObjects(resources []*models.V1alpha1ResourceDiff) ([]*unstructured.Unstructured, error) {
+func LiveObjects(resources []*argoappv1.ResourceDiff) ([]*unstructured.Unstructured, error) {
 	objs := make([]*unstructured.Unstructured, len(resources))
 	for i, resState := range resources {
 		obj, err := resState.LiveObject()

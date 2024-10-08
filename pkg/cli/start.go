@@ -29,7 +29,7 @@ var run = &cobra.Command{
 			panic(err)
 		}
 
-		content, err := os.ReadFile(config.AppConfig.PrivateKeyFilePath)
+		content, err := os.ReadFile(config.PrivateKeyFilePath)
 
 		if err != nil {
 			panic(err)
@@ -39,7 +39,7 @@ var run = &cobra.Command{
 		config.Github.App.WebhookSecret = os.Getenv(WebhookSecretEnvVar)
 
 		argoClient := &argocd.ApplicationsClient{
-			BaseUrl: config.ArgoConfig.ApiBaseUrl,
+			BaseUrl: config.ArgoCdUrl,
 		}
 
 		if apiKey, exists := os.LookupEnv("ARGOBOT_ARGOCD_API_KEY"); exists {

@@ -8,7 +8,4 @@ github:
     integration_id: 123456
     webhookSecret: fc1b391fa17718cfdbf9497ec9bfe59
 
-app_configuration:
-  pull_request_preamble: "I am echo bot."
-  data_directory: .data
-  private_key_file_path: ../testdata/github_app.pem
+privateKeyFilePath: ../testdata/github_app.pem

@@ -55,7 +55,7 @@ func Test_PRCommentHandler(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	content, err := os.ReadFile(config.AppConfig.PrivateKeyFilePath)
+	content, err := os.ReadFile(config.PrivateKeyFilePath)
 	if err != nil {
 		panic(err)
 	}
@@ -103,7 +103,7 @@ func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 	if err != nil {
 		panic(err)
 	}
-	content, err := os.ReadFile(config.AppConfig.PrivateKeyFilePath)
+	content, err := os.ReadFile(config.PrivateKeyFilePath)
 	if err != nil {
 		panic(err)
 	}

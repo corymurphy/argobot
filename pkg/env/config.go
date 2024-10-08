@@ -6,6 +6,6 @@ type Config struct {
 	Server HTTPConfig       `yaml:"server"`
 	Github githubapp.Config `yaml:"github"`
 
-	AppConfig  AppConfig  `yaml:"app_configuration"`
-	ArgoConfig ArgoConfig `yaml:"argoConfig"`
+	ArgoCdUrl          string `yaml:"argoCdUrl"`
+	PrivateKeyFilePath string `yaml:"privateKeyFilePath"`
 }

@@ -80,3 +80,20 @@ jobs:
         echo ${{ github.token }} | helm registry login --username ${{ github.actor }} --password-stdin ghcr.io/corymurphy
         helm push ".packages/${name}-${version}.tgz" oci://ghcr.io/corymurphy/helm-charts
 
+  github:
+    runs-on: ubuntu-latest
+    needs: [docker, helm]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: get release version
+        if: github.ref_name == github.event.repository.default_branch
+        run: |
+          echo "version=$(awk '{print $1}' version)" >> $GITHUB_ENV
+
+      - uses: softprops/action-gh-release@v2
+        if: github.ref_name == github.event.repository.default_branch
+        with:
+          tag_name: ${{ env.version }}

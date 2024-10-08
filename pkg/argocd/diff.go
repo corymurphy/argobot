@@ -19,7 +19,6 @@ import (
 	"github.com/argoproj/gitops-engine/pkg/sync/hook"
 	"github.com/argoproj/gitops-engine/pkg/sync/ignore"
 	"github.com/argoproj/gitops-engine/pkg/utils/kube"
-	models "github.com/corymurphy/argobot/pkg/argocd/models"
 	"github.com/corymurphy/argobot/pkg/logging"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -40,7 +39,7 @@ func Plan(ctx context.Context, argoSettings *settings.Settings, app *argoappv1.A
 	var unstructureds []*unstructured.Unstructured
 
 	for _, mfst := range target.Manifests {
-		obj, err := models.UnmarshalToUnstructured(mfst)
+		obj, err := UnmarshalToUnstructured(mfst)
 		if err != nil {
 			return plan, hasDiff, nil
 		}

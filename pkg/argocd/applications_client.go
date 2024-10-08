@@ -12,7 +12,7 @@ import (
 	"github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v2/pkg/apiclient/settings"
 	argoappv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	models "github.com/corymurphy/argobot/pkg/argocd/models"
+	// argp
 	// models "github.com/corymurphy/argobot/pkg/argocd/models"
 )
 
@@ -63,32 +63,32 @@ func (c *ApplicationsClient) Apply(app string, revision string) (string, error) 
 	return string(body), nil
 }
 
-func (c *ApplicationsClient) List() (models.V1alpha1ApplicationList, error) {
-	var apps models.V1alpha1ApplicationList
+func (c *ApplicationsClient) List() (*argoappv1.ApplicationList, error) {
+	var apps argoappv1.ApplicationList
 	url := fmt.Sprintf("%s/api/v1/applications", c.BaseUrl)
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		return apps, err
+		return &apps, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.Token))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apps, err
+		return &apps, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return apps, err
+		return &apps, err
 	}
 
 	if err := json.Unmarshal(body, &apps); err != nil {
-		return apps, err
+		return &apps, err
 	}
 
-	return apps, nil
+	return &apps, nil
 }
 
 func (c *ApplicationsClient) Get(name string) (*argoappv1.Application, error) {

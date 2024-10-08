@@ -42,7 +42,9 @@ func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, command 
 	for _, app := range apps.Items {
 
 		path := app.Spec.Source.Path
-		name := app.Metadata.Name
+		name := app.Name
+		// name := app.Metadata.Name
+		// app.Name
 		a.Log.Debug(fmt.Sprintf("name: %s | path: %s", name, path))
 
 		for _, file := range modified {

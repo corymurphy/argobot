@@ -2,28 +2,28 @@ package models
 
 type PullRequestComment struct {
 	// Message string
-	Sha  string
-	Pull PullRequest
+	Revision string
+	Pull     PullRequest
 }
 
-func NewPullRequestComment(sha string, pull PullRequest) PullRequestComment {
+func NewPullRequestComment(revision string, pull PullRequest) PullRequestComment {
 	return PullRequestComment{
 		// Message: msg,
-		Sha:  sha,
-		Pull: pull,
+		Revision: revision,
+		Pull:     pull,
 	}
 }
 
 type CommentResponse struct {
-	Message string
-	Sha     string
-	Pull    PullRequest
+	Message  string
+	Revision string
+	Pull     PullRequest
 }
 
 func NewCommentResponse(msg string, request PullRequestComment) CommentResponse {
 	return CommentResponse{
-		Message: msg,
-		Sha:     request.Sha,
-		Pull:    request.Pull,
+		Message:  msg,
+		Revision: request.Revision,
+		Pull:     request.Pull,
 	}
 }

@@ -75,11 +75,8 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 		return err
 	}
 
-	revision := pr.GetHead().SHA
-	h.Log.Debug("comment was for sha %s", *revision)
-
 	request := models.NewPullRequestComment(
-		*revision,
+		*pr.GetHead().SHA,
 		models.PullRequest{
 			Number: prNum,
 			Name:   repoName,
@@ -104,8 +101,6 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 	// TODO: move this to startup and cache?
 
 	if comment.Command.Application == "" {
-		h.Log.Info(fmt.Sprintf("app %s", comment.Command.Application))
-
 		appResolver := NewApplicationResolver(client, &h.ArgoClient, h.Log)
 		apps, err := appResolver.FindApplicationNames(ctx, comment.Command, request.Pull)
 		if err != nil {
@@ -113,27 +108,35 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 			return err
 		}
 
-		// TODO support multiple apps
-		comment.Command.Application = apps[0]
+		comment.Command.Applications = apps
 	}
 
 	if comment.Command.Name == command.Plan {
-		plan, diff, err := h.Plan(ctx, comment.Command.Application, *revision)
-		if err != nil {
-			h.Log.Err("unable to plan: %w %s", err, plan)
-			return err
-		}
-		var msg string
-		if diff {
-			msg = fmt.Sprintf("argocd plan for `%s`\n\n", comment.Command.Application) + "```diff\n" + plan + "\n```"
-		} else {
-			msg = "no diff detected, current state is up to date with this revision."
-			h.Log.Info(plan)
-		}
+		for _, app := range comment.Command.Applications {
+			var err error = nil
 
-		return h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
+			plan, diff, err := h.Plan(ctx, app, request.Revision)
+			if err != nil {
+				h.Log.Err("unable to plan: %w %s", err, plan)
+				return err
+			}
+			var msg string
+			if diff {
+				msg = fmt.Sprintf("argocd plan for `%s`\n\n", app) + "```diff\n" + plan + "\n```"
+			} else {
+				msg = "no diff detected, current state is up to date with this revision."
+				h.Log.Info(plan)
+			}
+
+			err = h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
+			if err != nil {
+				h.Log.Err("error while planning %s: %w", app, err)
+			}
+		}
+		return nil
 	}
 
+	// TODO allow autoapply
 	if comment.Command.Name == command.Apply {
 		go func() {
 			apply := NewApplyRunner(client, h.Config, h.Log, &h.ArgoClient)
@@ -155,9 +158,6 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 func (h *PRCommentHandler) Plan(ctx context.Context, name string, revision string) (string, bool, error) {
 	var plan string
 	var diff bool = false
-	// var resources argo.ApplicationManagedResourcesResponse // http://localhost:8081/api/v1/applications/helloworld/managed-resources
-	// var app argo.ApplicationApplicationResponse
-
 	var resources *application.ManagedResourcesResponse
 
 	resources, err := h.ArgoClient.ManagedResources(name)
@@ -181,8 +181,6 @@ func (h *PRCommentHandler) Plan(ctx context.Context, name string, revision strin
 	if err != nil {
 		return plan, diff, err
 	}
-
-	// h.Log.Info(l)
 
 	return argocd.Plan(ctx, &settings, live, resources, target, revision, h.Log)
 }

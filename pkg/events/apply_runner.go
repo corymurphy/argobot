@@ -44,7 +44,7 @@ func (a *ApplyRunner) Run(ctx context.Context, cmd *CommentCommand, comment mode
 		return models.NewCommentResponse("pull request must be approved and in a mergeable state", comment), nil
 	}
 
-	apply, err := a.ApplyClient.Apply(cmd.Application, comment.Sha)
+	apply, err := a.ApplyClient.Apply(cmd.Application, comment.Revision)
 	if err != nil {
 		return resp, fmt.Errorf("argoclient failed while applying %w", err)
 	}

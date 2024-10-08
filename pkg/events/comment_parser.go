@@ -162,8 +162,9 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 
 	return &CommentParseResult{
 		Command: &CommentCommand{
-			Name:        name,
-			Application: app,
+			Name:         name,
+			Application:  app,
+			Applications: []string{app},
 		},
 	}
 }

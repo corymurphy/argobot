@@ -11,17 +11,9 @@ ENV ARGOBOT_COMMIT=${ARGOBOT_COMMIT}
 
 WORKDIR /app
 
-RUN apk add --no-cache \
-        bash~=5.2
-
 COPY go.mod go.sum ./
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-# RUN go mod graph | awk '{if ($1 !~ "@") print $2}' | xargs go get
-RUN go mod tidy
+RUN go mod download
 
-# RUN --mount=type=cache,target=/go/pkg/mod \
-#     --mount=type=cache,target=/root/.cache/go-build \
-#     CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X 'main.version=${ARGOBOT_VERSION}' -X 'main.commit=${ARGOBOT_COMMIT}'" -v -o argobot .
 COPY . /app
 
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X 'main.version=${ARGOBOT_VERSION}' -X 'main.commit=${ARGOBOT_COMMIT}'" -v -o argobot ./cmd/argobot
@@ -35,24 +27,10 @@ RUN addgroup argobot && \
     chmod g=u /home/argobot/ && \
     chmod g=u /etc/passwd
 
-
-# FROM base as release
-
-# COPY --from=builder /tmp/argocd-linux-amd64 /tmp/argocd-linux-amd64
-# RUN install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd && rm -f /tmp/argocd-linux-amd64
-
-# RUN apk add --no-cache \
-#         ca-certificates \
-#         git
-
 RUN mkdir /app && \
     chown argobot:argobot /app
 
 WORKDIR /app
-
-# USER argobot
-
-# FROM argocli
 
 USER root
 

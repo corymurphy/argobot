@@ -92,7 +92,7 @@ jobs:
         if: github.ref_name == github.event.repository.default_branch
         run: |
           version="$(awk '{print $1}' version)"
-          echo "v${version}" >> $GITHUB_ENV
+          echo "version=${version}" >> $GITHUB_ENV
 
       - uses: softprops/action-gh-release@v2
         if: github.ref_name == github.event.repository.default_branch

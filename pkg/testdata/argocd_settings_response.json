@@ -1,0 +1,15 @@
+{
+  "url": "https://localhost",
+  "appLabelKey": "argocd.argoproj.io/instance",
+  "resourceOverrides": {
+    "apiextensions.k8s.io/CustomResourceDefinition": {
+      "ignoreDifferences": "jqPathExpressions: null\njsonPointers:\n- /status\n- /spec/preserveUnknownFields\nmanagedFieldsManagers: null\n",
+      "ignoreResourceUpdates": "jqPathExpressions: null\njsonPointers: null\nmanagedFieldsManagers: null\n"
+    }
+  },
+  "googleAnalytics": { "anonymizeUsers": true },
+  "kustomizeOptions": { "BuildOptions": "", "BinaryPath": "" },
+  "help": {},
+  "passwordPattern": "^.{8,32}$",
+  "controllerNamespace": "argocd"
+}

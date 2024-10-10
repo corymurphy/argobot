@@ -1,22 +1,7 @@
-// Copyright 2018 Palantir Technologies, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package events
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
@@ -42,45 +27,55 @@ type PRCommentHandler struct {
 }
 
 func (h *PRCommentHandler) Handles() []string {
-	return []string{"issue_comment"}
+	return []string{"issue_comment", "pull_request"}
 }
 
-func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID string, payload []byte) error {
-	var event github.IssueCommentEvent
-	if err := json.Unmarshal(payload, &event); err != nil {
-		return errors.Wrap(err, "failed to parse issue comment event payload")
+func (h *PRCommentHandler) Handle(ctx context.Context, eventType string, deliveryID string, payload []byte) error {
+	// var event github.IssueCommentEvent
+	// event.GetInstallation()
+	// var pr github.PullRequestEvent
+	event, err := NewEventMetadata(eventType, payload)
+	if err != nil {
+		h.Log.Err(err, "unable to parse event metadata")
+		return nil
 	}
+	// if err := json.Unmarshal(payload, &event); err != nil {
+	// 	return errors.Wrap(err, "failed to parse issue comment event payload")
+	// }
 
 	comment := NewCommentParser(h.Log).Parse(event)
 	if (comment.Ignore || comment.ImmediateResponse) && !comment.HasResponseComment {
 		return nil
 	}
 
-	repo := event.GetRepo()
-	prNum := event.GetIssue().GetNumber()
-	repoOwner := repo.GetOwner().GetLogin()
-	repoName := repo.GetName()
+	// repo := event.Re
+	// prNum := event.GetIssue().GetNumber()
+	// repoOwner := repo.GetOwner().GetLogin()
+	// repoName := repo.GetName()
+
+	// githubapp.InstallationSource
 
 	installationID := githubapp.GetInstallationIDFromEvent(&event)
 
-	ctx, _ = githubapp.PreparePRContext(ctx, installationID, repo, event.GetIssue().GetNumber())
+	// ctx, _ = githubapp.PreparePRContext(ctx, installationID, repo, event.GetIssue().GetNumber())
 
 	client, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
-	pr, _, err := client.PullRequests.Get(ctx, repoOwner, repoName, prNum)
+	pr, _, err := client.PullRequests.Get(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
 	if err != nil {
 		return err
 	}
 
 	request := models.NewPullRequestComment(
 		*pr.GetHead().SHA,
+		// TODO: replace this model with the event model
 		models.PullRequest{
-			Number: prNum,
-			Name:   repoName,
-			Owner:  repoOwner,
+			Number: event.PullRequest.Number,
+			Name:   event.Repository.Name,
+			Owner:  event.Repository.Owner,
 		},
 	)
 
@@ -89,7 +84,7 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 			Body: &comment.CommentResponse,
 		}
 
-		if _, _, err := client.Issues.CreateComment(ctx, repoOwner, repoName, prNum, &prComment); err != nil {
+		if _, _, err := client.Issues.CreateComment(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, &prComment); err != nil {
 			return err
 		}
 	}
@@ -104,8 +99,8 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 		appResolver := NewApplicationResolver(client, &h.ArgoClient, h.Log)
 		apps, err := appResolver.FindApplicationNames(ctx, comment.Command, request.Pull)
 		if err != nil {
-			h.Log.Err("unable to resolve app name %w", err)
-			return err
+			h.Log.Err(err, "unable to resolve app name")
+			return nil
 		}
 
 		comment.Command.Applications = apps
@@ -117,7 +112,7 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 
 			plan, diff, err := h.Plan(ctx, app, request.Revision)
 			if err != nil {
-				h.Log.Err("unable to plan: %w %s", err, plan)
+				h.Log.Err(err, fmt.Sprintf("unable to plan: %s", plan))
 				return err
 			}
 			var msg string
@@ -130,7 +125,7 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 
 			err = h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
 			if err != nil {
-				h.Log.Err("error while planning %s: %w", app, err)
+				h.Log.Err(err, fmt.Sprintf("error while planning %s", app))
 			}
 		}
 		return nil
@@ -142,7 +137,8 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType, deliveryID str
 			apply := NewApplyRunner(client, h.Config, h.Log, &h.ArgoClient)
 			response, err := apply.Run(ctx, comment.Command, request)
 			if err != nil {
-				h.Log.Err("unable to apply %w %s", err)
+				h.Log.Err(err, "unable to apply")
+
 				return
 			}
 			msg := fmt.Sprintf("apply result for `%s`\n\n", comment.Command.Application) + "```\n" + response.Message + "\n```"

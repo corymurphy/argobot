@@ -1,0 +1,213 @@
+{
+  "metadata": {
+    "name": "helloworld",
+    "namespace": "argocd",
+    "uid": "491a0c87-f4c4-49c4-892b-c7a08cb52217",
+    "resourceVersion": "3997169",
+    "generation": 6155,
+    "creationTimestamp": "2024-09-26T11:31:51Z",
+    "labels": { "app.kubernetes.io/managed-by": "Helm" },
+    "annotations": {
+      "meta.helm.sh/release-name": "argocd",
+      "meta.helm.sh/release-namespace": "argocd"
+    },
+    "managedFields": [
+      {
+        "manager": "helm",
+        "operation": "Update",
+        "apiVersion": "argoproj.io/v1alpha1",
+        "time": "2024-09-26T11:31:51Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              ".": {},
+              "f:meta.helm.sh/release-name": {},
+              "f:meta.helm.sh/release-namespace": {}
+            },
+            "f:labels": { ".": {}, "f:app.kubernetes.io/managed-by": {} }
+          },
+          "f:spec": {
+            ".": {},
+            "f:destination": { ".": {}, "f:namespace": {}, "f:server": {} },
+            "f:project": {},
+            "f:source": {
+              ".": {},
+              "f:path": {},
+              "f:repoURL": {},
+              "f:targetRevision": {}
+            }
+          }
+        }
+      },
+      {
+        "manager": "argocd-server",
+        "operation": "Update",
+        "apiVersion": "argoproj.io/v1alpha1",
+        "time": "2024-09-27T11:56:19Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": { "f:status": { "f:summary": {} } }
+      },
+      {
+        "manager": "argocd-application-controller",
+        "operation": "Update",
+        "apiVersion": "argoproj.io/v1alpha1",
+        "time": "2024-10-10T11:34:59Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:status": {
+            ".": {},
+            "f:controllerNamespace": {},
+            "f:health": { ".": {}, "f:status": {} },
+            "f:history": {},
+            "f:operationState": {
+              ".": {},
+              "f:finishedAt": {},
+              "f:message": {},
+              "f:operation": {
+                ".": {},
+                "f:initiatedBy": { ".": {}, "f:username": {} },
+                "f:retry": {},
+                "f:sync": { ".": {}, "f:revision": {} }
+              },
+              "f:phase": {},
+              "f:startedAt": {},
+              "f:syncResult": {
+                ".": {},
+                "f:resources": {},
+                "f:revision": {},
+                "f:source": {
+                  ".": {},
+                  "f:path": {},
+                  "f:repoURL": {},
+                  "f:targetRevision": {}
+                }
+              }
+            },
+            "f:reconciledAt": {},
+            "f:resources": {},
+            "f:sourceType": {},
+            "f:sync": {
+              ".": {},
+              "f:comparedTo": {
+                ".": {},
+                "f:destination": { ".": {}, "f:namespace": {}, "f:server": {} },
+                "f:source": {
+                  ".": {},
+                  "f:path": {},
+                  "f:repoURL": {},
+                  "f:targetRevision": {}
+                }
+              },
+              "f:revision": {},
+              "f:status": {}
+            }
+          }
+        }
+      }
+    ]
+  },
+  "spec": {
+    "source": {
+      "repoURL": "https://github.com/atlas8518/argocd-data",
+      "path": "minikube/manifests/helloworld",
+      "targetRevision": "HEAD"
+    },
+    "destination": {
+      "server": "https://kubernetes.default.svc",
+      "namespace": "helloworld"
+    },
+    "project": "default"
+  },
+  "status": {
+    "resources": [
+      {
+        "group": "apps",
+        "version": "v1",
+        "kind": "Deployment",
+        "namespace": "default",
+        "name": "web",
+        "status": "OutOfSync",
+        "health": { "status": "Missing" }
+      }
+    ],
+    "sync": {
+      "status": "OutOfSync",
+      "comparedTo": {
+        "source": {
+          "repoURL": "https://github.com/atlas8518/argocd-data",
+          "path": "minikube/manifests/helloworld",
+          "targetRevision": "HEAD"
+        },
+        "destination": {
+          "server": "https://kubernetes.default.svc",
+          "namespace": "helloworld"
+        }
+      },
+      "revision": "e98cd943a70fafc01d818c2d45d7411061e0ef6b"
+    },
+    "health": { "status": "Missing" },
+    "history": [
+      {
+        "revision": "47110b135dfe3e64e9199f66945532f378f05b4b",
+        "deployedAt": "2024-09-27T11:47:50Z",
+        "id": 0,
+        "source": {
+          "repoURL": "https://github.com/atlas8518/argocd-data",
+          "path": "minikube/manifests/helloworld",
+          "targetRevision": "HEAD"
+        },
+        "deployStartedAt": "2024-09-27T11:47:49Z",
+        "initiatedBy": { "username": "admin" }
+      },
+      {
+        "revision": "47110b135dfe3e64e9199f66945532f378f05b4b",
+        "deployedAt": "2024-09-27T11:56:19Z",
+        "id": 1,
+        "source": {
+          "repoURL": "https://github.com/atlas8518/argocd-data",
+          "path": "minikube/manifests/helloworld",
+          "targetRevision": "HEAD"
+        },
+        "deployStartedAt": "2024-09-27T11:56:19Z",
+        "initiatedBy": { "username": "admin" }
+      }
+    ],
+    "reconciledAt": "2024-10-10T11:34:59Z",
+    "operationState": {
+      "operation": {
+        "sync": { "revision": "47110b135dfe3e64e9199f66945532f378f05b4b" },
+        "initiatedBy": { "username": "admin" },
+        "retry": {}
+      },
+      "phase": "Succeeded",
+      "message": "successfully synced (all tasks run)",
+      "syncResult": {
+        "resources": [
+          {
+            "group": "apps",
+            "version": "v1",
+            "kind": "Deployment",
+            "namespace": "default",
+            "name": "web",
+            "status": "Synced",
+            "message": "deployment.apps/web created",
+            "hookPhase": "Running",
+            "syncPhase": "Sync"
+          }
+        ],
+        "revision": "47110b135dfe3e64e9199f66945532f378f05b4b",
+        "source": {
+          "repoURL": "https://github.com/atlas8518/argocd-data",
+          "path": "minikube/manifests/helloworld",
+          "targetRevision": "HEAD"
+        }
+      },
+      "startedAt": "2024-09-27T11:56:19Z",
+      "finishedAt": "2024-09-27T11:56:19Z"
+    },
+    "sourceType": "Directory",
+    "summary": {},
+    "controllerNamespace": "argocd"
+  }
+}

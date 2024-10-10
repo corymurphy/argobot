@@ -2,6 +2,8 @@ package logging
 
 import (
 	"log"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -16,7 +18,8 @@ type SimpleLogging interface {
 	Debug(format string, a ...interface{})
 	Info(format string, a ...interface{})
 	Warn(format string, a ...interface{})
-	Err(format string, a ...interface{})
+	// Err(format string, a ...interface{})
+	Err(err error, message string)
 }
 
 type Logger struct {
@@ -47,8 +50,16 @@ func (l *Logger) Warn(format string, a ...interface{}) {
 	}
 }
 
-func (l *Logger) Err(format string, a ...interface{}) {
+// TODO: use errors.Wrap(error, string)
+func (l *Logger) Err(err error, message string) {
 	if l.level >= Err {
-		log.Printf(format, a...)
+		log.Printf("%v", errors.Wrap(err, message))
+		// errors.Wrap(error, string)
 	}
 }
+
+// func (l *Logger) Err(format string, a ...interface{}) {
+// 	if l.level >= Err {
+// 		log.Printf(format, a...)
+// 	}
+// }

@@ -23,7 +23,8 @@ import (
 )
 
 func Test_HealthCheck(t *testing.T) {
-	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), nil)
+
+	s := server.NewServer(&env.Config{}, logging.NewLogger(logging.Silent), &argocd.ApplicationsClient{})
 	req, _ := http.NewRequest("GET", "/health", bytes.NewBuffer(nil))
 	w := httptest.NewRecorder()
 	s.Health(w, req)
@@ -42,7 +43,8 @@ func Test_PRCommentHandler(t *testing.T) {
 		"/app/installations/345345345/access_tokens":     false,
 		"/repos/atlas8518/argocd-data/issues/1/comments": false,
 		"/repos/atlas8518/argocd-data/pulls/1":           false,
-		"/api/v1/applications/testapp/sync":              false,
+		"/api/v1/applications/testapp/managed-resources": false,
+		"/api/v1/applications/testapp":                   false,
 	}
 	mu := sync.Mutex{}
 
@@ -62,15 +64,14 @@ func Test_PRCommentHandler(t *testing.T) {
 	config.Github.V3APIURL = mockServer.URL
 	config.Github.WebURL = mockServer.URL
 	config.Github.App.PrivateKey = string(content)
+	config.Github.App.WebhookSecret = "fc1b391fa17718cfdbf9497ec9bfe59" // invalid test secret
 
 	// logger := assert.NewTestLogger(t)
 	logger := logging.NewLogger(logging.Silent)
 
 	for _, testCase := range *NewServerTestCases(mockServer) {
 
-		// TODO: fix this signature
-		// s := server.NewServer(testCase.Config, logger, testCase.ApplyClient)
-		s := server.NewServer(testCase.Config, logger, nil)
+		s := server.NewServer(testCase.Config, logger, &testCase.ArgoClient)
 
 		w := httptest.NewRecorder()
 
@@ -91,8 +92,7 @@ func Test_PRCommentHandler(t *testing.T) {
 type ServerTestCase struct {
 	BodyPath           string
 	Config             *env.Config
-	PlanClient         argocd.PlanClient
-	ApplyClient        argocd.ApplyClient
+	ArgoClient         argocd.ApplicationsClient
 	ExpectedStatusCode uint
 	ExpectedRequests   map[string]bool
 }
@@ -121,14 +121,17 @@ func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 		{
 			BodyPath: "../testdata/comments/pullrequest_comment_user_plan.json",
 			Config:   config,
-			// PlanClient:         NewMockPlanClient("../testdata/argocd_plan_diff"),
+			ArgoClient: argocd.ApplicationsClient{
+				Token:   "123",
+				BaseUrl: mockServer.URL,
+			},
 
 			ExpectedStatusCode: http.StatusOK,
 		},
 		{
 			BodyPath: "../testdata/comments/pullrequest_comment_user_apply.json",
 			Config:   config,
-			ApplyClient: &argocd.ApplicationsClient{
+			ArgoClient: argocd.ApplicationsClient{
 				Token:   "123",
 				BaseUrl: mockServer.URL,
 			},
@@ -189,6 +192,8 @@ func mockServer(requests map[string]bool, mu *sync.Mutex, t *testing.T) *httptes
 			panic(err)
 		}
 		if string(expected) != string(actual) {
+			os.WriteFile("../../.debug/actual.yaml", []byte(actual), 0644)
+			os.WriteFile("../../.debug/expected.yaml", []byte(expected), 0644)
 			t.Error("pull request comment plan diff did not match expected")
 		}
 		mu.Unlock()
@@ -206,6 +211,34 @@ func mockServer(requests map[string]bool, mu *sync.Mutex, t *testing.T) *httptes
 		requests["/api/v1/applications/testapp/sync"] = true
 		mu.Unlock()
 		fmt.Fprint(w, string(""))
+	})
+	router.HandleFunc("/api/v1/applications/testapp/managed-resources", func(w http.ResponseWriter, r *http.Request) {
+		response, _ := os.ReadFile("../testdata/argocd_testapp_managed_resources_response.json")
+		mu.Lock()
+		requests["/api/v1/applications/testapp/managed-resources"] = true
+		mu.Unlock()
+		fmt.Fprint(w, string(response))
+	})
+	router.HandleFunc("/api/v1/applications/testapp", func(w http.ResponseWriter, r *http.Request) {
+		response, _ := os.ReadFile("../testdata/argocd_testapp_response.json")
+		mu.Lock()
+		requests["/api/v1/applications/testapp"] = true
+		mu.Unlock()
+		fmt.Fprint(w, string(response))
+	})
+	router.HandleFunc("/api/v1/applications/testapp/manifests", func(w http.ResponseWriter, r *http.Request) {
+		response, _ := os.ReadFile("../testdata/argocd_testapp_manifests_response.json")
+		mu.Lock()
+		requests["/api/v1/applications/testapp/manifests"] = true
+		mu.Unlock()
+		fmt.Fprint(w, string(response))
+	})
+	router.HandleFunc("/api/v1/settings", func(w http.ResponseWriter, r *http.Request) {
+		response, _ := os.ReadFile("../testdata/argocd_settings_response.json")
+		mu.Lock()
+		requests["/api/v1/settings"] = true
+		mu.Unlock()
+		fmt.Fprint(w, string(response))
 	})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		t.Error(r)

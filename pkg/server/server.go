@@ -27,13 +27,13 @@ func NewServer(config *env.Config, logger logging.SimpleLogging, argoClient *arg
 
 	cc, err := githubapp.NewDefaultCachingClientCreator(
 		config.Github,
-		githubapp.WithClientUserAgent("argobot/0.1.0"),
+		githubapp.WithClientUserAgent("argobot/0.1.0"), // TODO: use dynamic version
 		githubapp.WithClientTimeout(3*time.Second),
 		githubapp.WithClientCaching(false, func() httpcache.Cache { return httpcache.NewMemoryCache() }),
 	)
 
 	if err != nil {
-		logger.Err("unable to create github client creator", err)
+		logger.Err(err, "unable to create github client creator")
 		panic(err)
 	}
 
@@ -45,7 +45,6 @@ func NewServer(config *env.Config, logger logging.SimpleLogging, argoClient *arg
 	}
 
 	webhookHandler := githubapp.NewDefaultEventDispatcher(config.Github, prCommentHandler)
-
 	return &Server{
 		Config:           config,
 		Log:              logger,

@@ -1,12 +1,10 @@
 package events
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/corymurphy/argobot/pkg/command"
 	"github.com/corymurphy/argobot/pkg/logging"
-	"github.com/google/go-github/v53/github"
 )
 
 func Test_Comment_IsHelp(t *testing.T) {
@@ -26,8 +24,10 @@ func Test_Comment_IsHelp(t *testing.T) {
 	}
 }
 `
-	var event github.IssueCommentEvent
-	json.Unmarshal([]byte(serialized), &event)
+	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	if err != nil {
+		t.Error(err)
+	}
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -53,9 +53,10 @@ func Test_Comment_IsBot(t *testing.T) {
 	}
 }
 `
-
-	var event github.IssueCommentEvent
-	json.Unmarshal([]byte(serialized), &event)
+	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	if err != nil {
+		t.Error(err)
+	}
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -83,8 +84,10 @@ func Test_PlanHasApplicationName(t *testing.T) {
 	}
 	`
 
-	var event github.IssueCommentEvent
-	json.Unmarshal([]byte(serialized), &event)
+	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	if err != nil {
+		t.Error(err)
+	}
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -116,8 +119,10 @@ func Test_ApplyHasApplicationName(t *testing.T) {
 	}
 	`
 
-	var event github.IssueCommentEvent
-	json.Unmarshal([]byte(serialized), &event)
+	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	if err != nil {
+		t.Error(err)
+	}
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)

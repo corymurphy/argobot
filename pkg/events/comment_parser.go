@@ -37,8 +37,22 @@ func NewCommentParser(logger logging.SimpleLogging) *CommentParser {
 	}
 }
 
-func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResult {
-	if event.GetAction() != "created" {
+func (c *CommentParser) Parse(event EventMetadata) *CommentParseResult {
+
+	if event.Action == Opened {
+		c.Log.Info("responding to pull request open event with help message")
+		return &CommentParseResult{
+			ImmediateResponse:  true,
+			Ignore:             false,
+			HasResponseComment: true,
+			CommentResponse:    helpComment(),
+			Command: &CommentCommand{
+				Name: command.Help,
+			},
+		}
+	}
+
+	if event.Action != Comment {
 		msg := "ignoring a non created event"
 		c.Log.Info(msg)
 		return &CommentParseResult{
@@ -48,7 +62,7 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 		}
 	}
 
-	if !event.GetIssue().IsPullRequest() {
+	if !event.IsPullRequest {
 		msg := "ignoring a non pull request event"
 		c.Log.Info(msg)
 		return &CommentParseResult{
@@ -58,8 +72,7 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 		}
 	}
 
-	author := event.GetComment().GetUser().GetLogin()
-	isBot := strings.HasSuffix(author, "[bot]")
+	isBot := strings.HasSuffix(event.Actor.Name, "[bot]")
 	if isBot {
 		c.Log.Info("ignoring comment from a bot")
 		return &CommentParseResult{
@@ -69,8 +82,8 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 		}
 	}
 
-	body := event.GetComment().Body
-	if len(*body) > CommandMaxLen {
+	body := event.Message
+	if len(body) > CommandMaxLen {
 		c.Log.Info("ignoring comment exceeding max length")
 		return &CommentParseResult{
 			ImmediateResponse:  true,
@@ -79,7 +92,7 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 		}
 	}
 
-	isArgo := strings.HasPrefix(*body, CommandName)
+	isArgo := strings.HasPrefix(body, CommandName)
 	if !isArgo {
 		c.Log.Debug("ignoring, comment is not an argobot command")
 		return &CommentParseResult{
@@ -89,9 +102,9 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 		}
 	}
 
-	*body = strings.ToLower(*body)
+	body = strings.ToLower(body)
 
-	if *body == CommandName || *body == fmt.Sprintf("%s help", CommandName) {
+	if body == CommandName || body == fmt.Sprintf("%s help", CommandName) {
 		c.Log.Debug("responding, help requested")
 		return &CommentParseResult{
 			ImmediateResponse:  true,
@@ -104,7 +117,7 @@ func (c *CommentParser) Parse(event github.IssueCommentEvent) *CommentParseResul
 		}
 	}
 
-	args, err := shlex.Split(*body)
+	args, err := shlex.Split(body)
 	if err != nil || len(args) < 1 {
 		return &CommentParseResult{
 			ImmediateResponse:  true,
@@ -193,9 +206,15 @@ Usage: argo COMMAND [ARGS]...
 
   Allows you to interact with ArgoCD from a Pull Request.
 
+  If the application name is not provided, it will be discovered
+  based on the location of the modified files.
+
+  Note: Please use care when running the apply command.
+	It does not lock the state between plans like atlantis right now.
+
 Commands:
   help 		Shows this message
-  plan 		--application myapp
+  plan 		[ --application myapp ]
   apply 	--application myapp
 ` + "```"
 }

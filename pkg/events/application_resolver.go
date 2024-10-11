@@ -7,18 +7,18 @@ import (
 	"time"
 
 	"github.com/corymurphy/argobot/pkg/argocd"
+	"github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
-	"github.com/corymurphy/argobot/pkg/models"
-	"github.com/google/go-github/v53/github"
+	gogithub "github.com/google/go-github/v53/github"
 )
 
 type ApplicationResolver struct {
-	GitHubClient *github.Client
+	GitHubClient *gogithub.Client
 	ArgoCdClient *argocd.ApplicationsClient
 	Log          logging.SimpleLogging
 }
 
-func NewApplicationResolver(githubClient *github.Client, argocdClient *argocd.ApplicationsClient, log logging.SimpleLogging) *ApplicationResolver {
+func NewApplicationResolver(githubClient *gogithub.Client, argocdClient *argocd.ApplicationsClient, log logging.SimpleLogging) *ApplicationResolver {
 	return &ApplicationResolver{
 		GitHubClient: githubClient,
 		ArgoCdClient: argocdClient,
@@ -26,10 +26,10 @@ func NewApplicationResolver(githubClient *github.Client, argocdClient *argocd.Ap
 	}
 }
 
-func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, command *CommentCommand, pull models.PullRequest) ([]string, error) {
+func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, command *CommentCommand, event github.Event) ([]string, error) {
 	var changedApps []string
 
-	modified, err := a.GetModifiedFiles(ctx, pull)
+	modified, err := a.GetModifiedFiles(ctx, event)
 	if err != nil {
 		return changedApps, fmt.Errorf("unable to list github pull request modified files: %s", err)
 	}
@@ -43,8 +43,6 @@ func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, command 
 
 		path := app.Spec.Source.Path
 		name := app.Name
-		// name := app.Metadata.Name
-		// app.Name
 		a.Log.Debug(fmt.Sprintf("name: %s | path: %s", name, path))
 
 		for _, file := range modified {
@@ -58,14 +56,14 @@ func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, command 
 }
 
 // copied from atlantis
-func (a *ApplicationResolver) GetModifiedFiles(ctx context.Context, pull models.PullRequest) ([]string, error) {
-	a.Log.Debug("Getting modified files for GitHub pull request %d", pull.Number)
+func (a *ApplicationResolver) GetModifiedFiles(ctx context.Context, event github.Event) ([]string, error) {
+	a.Log.Debug("Getting modified files for GitHub pull request %d")
 	var files []string
 	nextPage := 0
 
 listloop:
 	for {
-		opts := github.ListOptions{
+		opts := gogithub.ListOptions{
 			PerPage: 300,
 		}
 		if nextPage != 0 {
@@ -81,12 +79,12 @@ listloop:
 			time.Sleep(attemptDelay)
 			attemptDelay = 2*attemptDelay + 1*time.Second
 
-			pageFiles, resp, err := a.GitHubClient.PullRequests.ListFiles(ctx, pull.Owner, pull.Name, pull.Number, &opts)
+			pageFiles, resp, err := a.GitHubClient.PullRequests.ListFiles(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, &opts)
 			if resp != nil {
-				a.Log.Debug("[attempt %d] GET /repos/%v/%v/pulls/%d/files returned: %v", i+1, pull.Owner, pull.Name, pull.Number, resp.StatusCode)
+				a.Log.Debug("[attempt %d] GET /repos/%v/%v/pulls/%d/files returned: %v", i+1, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, resp.StatusCode)
 			}
 			if err != nil {
-				ghErr, ok := err.(*github.ErrorResponse)
+				ghErr, ok := err.(*gogithub.ErrorResponse)
 				if ok && ghErr.Response.StatusCode == 404 {
 					// (hopefully) transient 404, retry after backoff
 					continue

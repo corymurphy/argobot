@@ -8,7 +8,6 @@ import (
 	"github.com/corymurphy/argobot/pkg/env"
 	vsc "github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
-	"github.com/corymurphy/argobot/pkg/models"
 	"github.com/google/go-github/v53/github"
 )
 
@@ -29,10 +28,10 @@ func NewApplyRunner(vcsClient *github.Client, config *env.Config, log logging.Si
 }
 
 // TODO: validate that the PR is in an approved/mergeable state
-func (a *ApplyRunner) Run(ctx context.Context, cmd *CommentCommand, comment models.PullRequestComment) (models.CommentResponse, error) {
-	var resp models.CommentResponse
+func (a *ApplyRunner) Run(ctx context.Context, cmd *CommentCommand, event vsc.Event) (CommentResponse, error) {
+	var resp CommentResponse
 
-	status, err := vsc.NewPullRequestStatusFetcher(ctx, a.Log, a.vcsClient).Fetch(comment.Pull)
+	status, err := vsc.NewPullRequestStatusFetcher(ctx, a.Log, a.vcsClient).Fetch(event)
 	if err != nil {
 		return resp, fmt.Errorf("unable to get status of pr %w", err)
 	}
@@ -41,13 +40,13 @@ func (a *ApplyRunner) Run(ctx context.Context, cmd *CommentCommand, comment mode
 			"pull request was not in a mergeable state. approved %t, mergeable %t",
 			status.ApprovalStatus.IsApproved,
 			status.Mergeable)
-		return models.NewCommentResponse("pull request must be approved and in a mergeable state", comment), nil
+		return NewCommentResponse("pull request must be approved and in a mergeable state", event), nil
 	}
 
-	apply, err := a.ApplyClient.Apply(cmd.Application, comment.Revision)
+	apply, err := a.ApplyClient.Apply(cmd.Application, event.Revision)
 	if err != nil {
 		return resp, fmt.Errorf("argoclient failed while applying %w", err)
 	}
 	a.Log.Debug(apply)
-	return models.NewCommentResponse(apply, comment), nil
+	return NewCommentResponse(apply, event), nil
 }

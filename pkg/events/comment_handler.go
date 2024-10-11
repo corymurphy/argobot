@@ -8,8 +8,8 @@ import (
 	"github.com/corymurphy/argobot/pkg/argocd"
 	"github.com/corymurphy/argobot/pkg/command"
 	"github.com/corymurphy/argobot/pkg/env"
+	vsc "github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
-	"github.com/corymurphy/argobot/pkg/models"
 	"github.com/corymurphy/argobot/pkg/utils"
 	"github.com/google/go-github/v53/github"
 	"github.com/palantir/go-githubapp/githubapp"
@@ -20,10 +20,9 @@ const maxCommentLength = 32768
 
 type PRCommentHandler struct {
 	githubapp.ClientCreator
-	Config      *env.Config
-	Log         logging.SimpleLogging
-	ArgoClient  argocd.ApplicationsClient
-	TestingMode bool
+	Config     *env.Config
+	Log        logging.SimpleLogging
+	ArgoClient argocd.ApplicationsClient
 }
 
 func (h *PRCommentHandler) Handles() []string {
@@ -34,50 +33,38 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType string, deliver
 	// var event github.IssueCommentEvent
 	// event.GetInstallation()
 	// var pr github.PullRequestEvent
-	event, err := NewEventMetadata(eventType, payload)
+	event, err := vsc.NewEvent(eventType, payload)
 	if err != nil {
 		h.Log.Err(err, "unable to parse event metadata")
 		return nil
 	}
-	// if err := json.Unmarshal(payload, &event); err != nil {
-	// 	return errors.Wrap(err, "failed to parse issue comment event payload")
-	// }
 
 	comment := NewCommentParser(h.Log).Parse(event)
 	if (comment.Ignore || comment.ImmediateResponse) && !comment.HasResponseComment {
 		return nil
 	}
 
-	// repo := event.Re
-	// prNum := event.GetIssue().GetNumber()
-	// repoOwner := repo.GetOwner().GetLogin()
-	// repoName := repo.GetName()
-
-	// githubapp.InstallationSource
-
 	installationID := githubapp.GetInstallationIDFromEvent(&event)
-
-	// ctx, _ = githubapp.PreparePRContext(ctx, installationID, repo, event.GetIssue().GetNumber())
 
 	client, err := h.NewInstallationClient(installationID)
 	if err != nil {
 		return err
 	}
 
-	pr, _, err := client.PullRequests.Get(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
-	if err != nil {
-		return err
-	}
+	// pr, _, err := client.PullRequests.Get(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
+	// if err != nil {
+	// 	return err
+	// }
 
-	request := models.NewPullRequestComment(
-		*pr.GetHead().SHA,
-		// TODO: replace this model with the event model
-		models.PullRequest{
-			Number: event.PullRequest.Number,
-			Name:   event.Repository.Name,
-			Owner:  event.Repository.Owner,
-		},
-	)
+	// request := github.NewPullRequestComment(
+	// 	*pr.GetHead().SHA,
+	// 	// TODO: replace this model with the event model
+	// 	models.PullRequest{
+	// 		Number: event.PullRequest.Number,
+	// 		Name:   event.Repository.Name,
+	// 		Owner:  event.Repository.Owner,
+	// 	},
+	// )
 
 	if (comment.Ignore || comment.ImmediateResponse) && comment.HasResponseComment {
 		prComment := github.IssueComment{
@@ -97,7 +84,7 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType string, deliver
 
 	if comment.Command.Application == "" {
 		appResolver := NewApplicationResolver(client, &h.ArgoClient, h.Log)
-		apps, err := appResolver.FindApplicationNames(ctx, comment.Command, request.Pull)
+		apps, err := appResolver.FindApplicationNames(ctx, comment.Command, event)
 		if err != nil {
 			h.Log.Err(err, "unable to resolve app name")
 			return nil
@@ -110,7 +97,7 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType string, deliver
 		for _, app := range comment.Command.Applications {
 			var err error = nil
 
-			plan, diff, err := h.Plan(ctx, app, request.Revision)
+			plan, diff, err := h.Plan(ctx, app, event.Revision)
 			if err != nil {
 				h.Log.Err(err, fmt.Sprintf("unable to plan: %s", plan))
 				return err
@@ -123,7 +110,7 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType string, deliver
 				h.Log.Info(plan)
 			}
 
-			err = h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
+			err = h.CreateComment(client, ctx, event, msg, comment.Command.Name.String())
 			if err != nil {
 				h.Log.Err(err, fmt.Sprintf("error while planning %s", app))
 			}
@@ -135,14 +122,14 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType string, deliver
 	if comment.Command.Name == command.Apply {
 		go func() {
 			apply := NewApplyRunner(client, h.Config, h.Log, &h.ArgoClient)
-			response, err := apply.Run(ctx, comment.Command, request)
+			response, err := apply.Run(ctx, comment.Command, event)
 			if err != nil {
 				h.Log.Err(err, "unable to apply")
 
 				return
 			}
 			msg := fmt.Sprintf("apply result for `%s`\n\n", comment.Command.Application) + "```\n" + response.Message + "\n```"
-			h.CreateComment(client, ctx, request.Pull, msg, comment.Command.Name.String())
+			h.CreateComment(client, ctx, event, msg, comment.Command.Name.String())
 		}()
 		return nil
 	}
@@ -182,8 +169,8 @@ func (h *PRCommentHandler) Plan(ctx context.Context, name string, revision strin
 }
 
 // TODO move this to another module
-func (h *PRCommentHandler) CreateComment(client *github.Client, ctx context.Context, pull models.PullRequest, comment string, command string) error {
-	h.Log.Debug("Creating comment on GitHub pull request %d", pull.Number)
+func (h *PRCommentHandler) CreateComment(client *github.Client, ctx context.Context, event vsc.Event, comment string, command string) error {
+	h.Log.Debug("Creating comment on GitHub pull request %d", event.PullRequest.Number)
 	var sepStart string
 
 	sepEnd := "\n```\n</details>" +
@@ -202,9 +189,9 @@ func (h *PRCommentHandler) CreateComment(client *github.Client, ctx context.Cont
 
 	comments := utils.SplitComment(comment, maxCommentLength, sepEnd, sepStart, 100, truncationHeader)
 	for i := range comments {
-		_, resp, err := client.Issues.CreateComment(ctx, pull.Owner, pull.Name, pull.Number, &github.IssueComment{Body: &comments[i]})
+		_, resp, err := client.Issues.CreateComment(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, &github.IssueComment{Body: &comments[i]})
 		if resp != nil {
-			h.Log.Debug("POST /repos/%v/%v/issues/%d/comments returned: %v", pull.Owner, pull.Name, pull.Number, resp.StatusCode)
+			h.Log.Debug("POST /repos/%v/%v/issues/%d/comments returned: %v", event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, resp.StatusCode)
 		}
 		if err != nil {
 			return err

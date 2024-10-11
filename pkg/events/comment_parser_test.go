@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/corymurphy/argobot/pkg/command"
+	"github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
 )
 
@@ -24,7 +25,7 @@ func Test_Comment_IsHelp(t *testing.T) {
 	}
 }
 `
-	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	event, err := github.NewEvent("issue_comment", []byte(serialized))
 	if err != nil {
 		t.Error(err)
 	}
@@ -53,7 +54,7 @@ func Test_Comment_IsBot(t *testing.T) {
 	}
 }
 `
-	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	event, err := github.NewEvent("issue_comment", []byte(serialized))
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,7 +85,7 @@ func Test_PlanHasApplicationName(t *testing.T) {
 	}
 	`
 
-	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	event, err := github.NewEvent("issue_comment", []byte(serialized))
 	if err != nil {
 		t.Error(err)
 	}
@@ -119,7 +120,7 @@ func Test_ApplyHasApplicationName(t *testing.T) {
 	}
 	`
 
-	event, err := NewEventMetadata("issue_comment", []byte(serialized))
+	event, err := github.NewEvent("issue_comment", []byte(serialized))
 	if err != nil {
 		t.Error(err)
 	}

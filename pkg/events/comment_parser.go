@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/corymurphy/argobot/pkg/command"
+	vsc "github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
 	"github.com/google/go-github/v53/github"
 	"github.com/google/shlex"
@@ -37,9 +38,9 @@ func NewCommentParser(logger logging.SimpleLogging) *CommentParser {
 	}
 }
 
-func (c *CommentParser) Parse(event EventMetadata) *CommentParseResult {
+func (c *CommentParser) Parse(event vsc.Event) *CommentParseResult {
 
-	if event.Action == Opened {
+	if event.Action == vsc.Opened {
 		c.Log.Info("responding to pull request open event with help message")
 		return &CommentParseResult{
 			ImmediateResponse:  true,
@@ -52,7 +53,7 @@ func (c *CommentParser) Parse(event EventMetadata) *CommentParseResult {
 		}
 	}
 
-	if event.Action != Comment {
+	if event.Action != vsc.Comment {
 		msg := "ignoring a non created event"
 		c.Log.Info(msg)
 		return &CommentParseResult{

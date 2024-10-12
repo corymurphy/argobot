@@ -16,6 +16,8 @@ jobs:
         with:
           go-version: "1.22.8"
       - uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
       - run: |
           go mod download
           go test ./test/integration/

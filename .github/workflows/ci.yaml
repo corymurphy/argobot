@@ -18,6 +18,6 @@ jobs:
       - uses: helm/kind-action@v1
         with:
           cluster_name: kind
-      - run: |
-          go mod download
-          go test ./test/integration/
+      - run: helm dependency update ./charts/argocd
+      - run: go mod download
+      - run: go test ./test/integration/

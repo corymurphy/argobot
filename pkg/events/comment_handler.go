@@ -51,20 +51,13 @@ func (h *PRCommentHandler) Handle(ctx context.Context, eventType string, deliver
 		return err
 	}
 
-	// pr, _, err := client.PullRequests.Get(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
-	// if err != nil {
-	// 	return err
-	// }
+	pr, _, err := client.PullRequests.Get(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
+	if err != nil {
+		return err
+	}
 
-	// request := github.NewPullRequestComment(
-	// 	*pr.GetHead().SHA,
-	// 	// TODO: replace this model with the event model
-	// 	models.PullRequest{
-	// 		Number: event.PullRequest.Number,
-	// 		Name:   event.Repository.Name,
-	// 		Owner:  event.Repository.Owner,
-	// 	},
-	// )
+	// TODO: this should happen in NewEvent
+	event.Revision = *pr.GetHead().SHA
 
 	if (comment.Ignore || comment.ImmediateResponse) && comment.HasResponseComment {
 		prComment := github.IssueComment{

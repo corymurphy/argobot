@@ -37,7 +37,7 @@ func (g *GithubPullRequestStatusFetcher) Fetch(event Event) (status models.PullR
 
 	mergeable, err := g.PullIsMergeable(event, "")
 	if err != nil {
-		return status, errors.Wrapf(err, "fetching mergeability status for repo: $s/%s, and pull number: %d", event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
+		return status, errors.Wrapf(err, "fetching mergeability status for repo: %s/%s, and pull number: %d", event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
 	}
 
 	return models.PullRequestStatus{

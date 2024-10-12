@@ -116,5 +116,5 @@ func NewEvent(eventType string, payload []byte) (Event, error) {
 		}, nil
 	}
 
-	return event, fmt.Errorf("unsupported event %s %s", eventType, *&githubEvent.Action)
+	return event, fmt.Errorf("unsupported event %s %s", eventType, *githubEvent.Action)
 }

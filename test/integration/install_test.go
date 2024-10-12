@@ -42,7 +42,7 @@ func TestTemplateBase(t *testing.T) {
 	argocd := &helm.Options{
 		KubectlOptions: kubectlOptions,
 		ValuesFiles:    []string{argoCdChartPath + "/values.yaml"},
-		SetValues:      map[string]string{"argo-cd.crds.install": "false"},
+		SetValues:      map[string]string{"argo-cd.crds.install": *createCrds},
 		ExtraArgs: map[string][]string{
 			"upgrade": {"--timeout", "60s", "--install", "--wait-for-jobs", "--wait", "--create-namespace", "--namespace", *kubeNamespace},
 		},

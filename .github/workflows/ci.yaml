@@ -20,4 +20,4 @@ jobs:
           cluster_name: kind
       - run: helm dependency update ./charts/argocd
       - run: go mod download
-      - run: go test ./test/integration/
+      - run: go test ./test/integration/ --create-crds "true"

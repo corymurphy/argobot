@@ -3,15 +3,15 @@ argo-cd:
   global:
     domain: localhost
     
-  server:
-    ingress:
-      enabled: true
-      annotations:
-        kubernetes.io/ingress.class: "nginx"
-        nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
-        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-      hosts:
-        - argocd.local
+  # server:
+  #   ingress:
+  #     enabled: true
+  #     annotations:
+  #       kubernetes.io/ingress.class: "nginx"
+  #       nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+  #       nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+  #     hosts:
+  #       - argocd.local
 
   configs:
     cm:
@@ -20,7 +20,3 @@ argo-cd:
     params:
       server.insecure: true
       server.disable.auth: false
-
-
-  notifications:
-    argocdUrl: http://localhost:8081

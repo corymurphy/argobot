@@ -17,6 +17,7 @@ import (
 func TestTemplateBase(t *testing.T) {
 	releaseName := "integration"
 	helmChartPath, _ := filepath.Abs("../../charts/argobot")
+	argoCdChartPath, _ := filepath.Abs("../../charts/argocd")
 	kubectlOptions := k8s.NewKubectlOptions(*kubeContext, "", *kubeNamespace)
 
 	tag := utils.InsecureRandom(8)
@@ -36,31 +37,38 @@ func TestTemplateBase(t *testing.T) {
 	})
 
 	k8s.CreateNamespaceE(t, kubectlOptions, *kubeNamespace)
-	k8s.KubectlApply(t, kubectlOptions, "../../.secrets/secrets.yaml")
+	k8s.KubectlApply(t, kubectlOptions, "./testdata/secret.yaml")
+
+	argocd := &helm.Options{
+		KubectlOptions: kubectlOptions,
+		ValuesFiles:    []string{argoCdChartPath + "/values.yaml"},
+		SetValues:      map[string]string{"argo-cd.crds.install": "false"},
+		ExtraArgs: map[string][]string{
+			"upgrade": {"--timeout", "60s", "--install", "--wait-for-jobs", "--wait", "--create-namespace", "--namespace", *kubeNamespace},
+		},
+	}
+
+	helm.Upgrade(t, argocd, argoCdChartPath, "argocd1")
+	defer helm.Delete(t, argocd, "argocd1", true)
 
 	options := &helm.Options{
 		KubectlOptions: kubectlOptions,
 		SetValues: map[string]string{
-			"chartVersion": "0.0.1",
-			"image.tag":    tag,
+			"image.tag": tag,
 		},
 		ExtraArgs: map[string][]string{
-			"upgrade": {"--timeout", "15s", "--install", "--wait-for-jobs", "--wait", "--create-namespace", "--namespace", *kubeNamespace},
+			"upgrade": {"--timeout", "30s", "--install", "--wait-for-jobs", "--wait", "--create-namespace", "--namespace", *kubeNamespace},
 		},
-		// ValuesFiles: []string{testCase.ValuesPath},
 	}
 
 	helm.Upgrade(t, options, helmChartPath, releaseName)
 	defer helm.Delete(t, options, releaseName, true)
-
-	// k8s.expo
 
 	services := k8s.ListServices(t, kubectlOptions, v1.ListOptions{LabelSelector: fmt.Sprintf("app.kubernetes.io/name=argobot,app.kubernetes.io/instance=%s", releaseName)})
 	if len(services) < 1 {
 		t.Fatalf("expected at least 1 service, found %d", len(services))
 	}
 	for _, service := range services {
-		// service.
 		k8s.WaitUntilServiceAvailable(t, kubectlOptions, service.Name, 10, 1*time.Second)
 	}
 }

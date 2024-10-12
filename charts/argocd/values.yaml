@@ -1,3 +1,6 @@
+apps:
+  create: true
+
 argo-cd:
 
   global:

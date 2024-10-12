@@ -1,3 +1,4 @@
+{{- if .Values.apps.create }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -11,3 +12,4 @@ spec:
     path: minikube/manifests/helloworld
     repoURL: https://github.com/corymurphy/argocd-data
     targetRevision: HEAD
+{{- end }}

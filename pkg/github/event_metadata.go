@@ -1,12 +1,9 @@
 package github
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/google/go-github/v53/github"
-	"github.com/palantir/go-githubapp/githubapp"
-	"github.com/pkg/errors"
 )
 
 type Action int
@@ -29,6 +26,10 @@ func (e Action) String() string {
 type Repository struct {
 	Name  string
 	Owner string
+}
+
+func (r *Repository) HtmlUrl() string {
+	return fmt.Sprintf("https://github.com/%s/%s", r.Owner, r.Name)
 }
 
 type Actor struct {
@@ -65,65 +66,6 @@ func (e *Event) GetInstallation() *github.Installation {
 
 func (e *Event) HasMessage() bool {
 	return e.Message != ""
-}
-
-func NewEvent(clientCreator githubapp.ClientCreator, eventType string, payload []byte) (Event, error) {
-	var event Event
-	var githubEvent GithubEvent
-	if err := json.Unmarshal(payload, &githubEvent); err != nil {
-		return event, errors.Wrap(err, "failed to parse event payload")
-	}
-
-	if eventType == "issue_comment" && *githubEvent.Action == "created" {
-		var comment github.IssueCommentEvent
-		if err := json.Unmarshal(payload, &comment); err != nil {
-			return event, errors.Wrap(err, "failed to parse issue comment event payload")
-		}
-		// comment.
-
-		// comment.GetChanges().Base.SHA.From
-		// comment.Re
-
-		return Event{
-			Actor:         Actor{Name: comment.GetComment().GetUser().GetLogin()},
-			Action:        Comment,
-			IsPullRequest: comment.GetIssue().IsPullRequest(),
-			Repository: Repository{
-				Name:  comment.GetRepo().GetName(),
-				Owner: comment.GetRepo().GetOwner().GetLogin(),
-			},
-			PullRequest: PullRequest{
-				Number: comment.GetIssue().GetNumber(),
-			},
-			Message:              *comment.GetComment().Body,
-			InstallationProvider: &comment,
-		}, nil
-	}
-
-	if eventType == "pull_request" && (*githubEvent.Action == "opened" || *githubEvent.Action == "reopened" || *githubEvent.Action == "ready_for_review") {
-		var pr github.PullRequestEvent
-		if err := json.Unmarshal(payload, &pr); err != nil {
-			return event, errors.Wrap(err, "failed to parse issue comment event payload")
-		}
-
-		return Event{
-			Actor:         Actor{Name: pr.GetPullRequest().GetUser().GetLogin()},
-			Action:        Opened,
-			IsPullRequest: true,
-			Revision:      *pr.PullRequest.Head.SHA,
-			Repository: Repository{
-				Name:  pr.GetRepo().GetName(),
-				Owner: pr.GetRepo().GetOwner().GetLogin(),
-			},
-			PullRequest: PullRequest{
-				Number: pr.GetPullRequest().GetNumber(),
-			},
-			Message:              "",
-			InstallationProvider: &pr,
-		}, nil
-	}
-
-	return event, fmt.Errorf("unsupported event %s %s", eventType, *githubEvent.Action)
 }
 
 func InitializeFromIssueComment(source github.IssueCommentEvent, revision string) Event {

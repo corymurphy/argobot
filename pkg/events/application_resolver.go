@@ -46,7 +46,7 @@ func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, event gi
 		a.Log.Debug(fmt.Sprintf("name: %s | path: %s", name, path))
 
 		for _, file := range modified {
-			if strings.Contains(file, path) {
+			if strings.Contains(file, path) && app.Spec.Source.RepoURL == event.Repository.HtmlUrl() {
 				changedApps = append(changedApps, name)
 			}
 		}

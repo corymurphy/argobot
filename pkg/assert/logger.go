@@ -3,6 +3,8 @@ package assert
 import (
 	"fmt"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 type TestLogger struct {
@@ -32,6 +34,10 @@ func (t *TestLogger) Warn(format string, a ...interface{}) {
 	t.log(format, a...)
 }
 
-func (t *TestLogger) Err(format string, a ...interface{}) {
-	t.log(format, a...)
+func (t *TestLogger) Err(err error, message string) {
+	t.t.Logf("%v", errors.Wrap(err, message))
 }
+
+// func (t *TestLogger) Err(format string, a ...interface{}) {
+// 	t.log(format, a...)
+// }

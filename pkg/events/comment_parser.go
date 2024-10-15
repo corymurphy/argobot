@@ -176,9 +176,9 @@ func (c *CommentParser) Parse(event vsc.Event) *CommentParseResult {
 
 	return &CommentParseResult{
 		Command: &CommentCommand{
-			Name:         name,
-			Application:  app,
-			Applications: []string{app},
+			Name:                name,
+			Applications:        []string{app},
+			ExplicitApplication: true,
 		},
 	}
 }

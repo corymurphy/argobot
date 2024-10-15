@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/pkg/errors"
@@ -23,6 +24,26 @@ type SimpleLogging interface {
 
 type Logger struct {
 	level int
+}
+
+func GetLogLevel(input string) (int, error) {
+	// level, err := strconv.Atoi(input)
+	// if err != nil {
+	// 	return level, err
+	// }
+	switch input {
+	case "silent":
+		return Silent, nil
+	case "error":
+		return Err, nil
+	case "warn":
+		return Warn, nil
+	case "info":
+		return Info, nil
+	case "debug":
+		return Debug, nil
+	}
+	return Info, fmt.Errorf("invalid log level %s", input)
 }
 
 func NewLogger(level int) *Logger {

@@ -14,12 +14,12 @@ import (
 )
 
 type Server struct {
-	Config           *env.Config
-	Log              logging.SimpleLogging
-	PRCommentHandler http.Handler
-	PlanClient       argocd.PlanClient
-	ApplyClient      argocd.ApplyClient
-	ArgoClient       argocd.ApplicationsClient
+	Config         *env.Config
+	Log            logging.SimpleLogging
+	WebhookHandler http.Handler
+	PlanClient     argocd.PlanClient
+	ApplyClient    argocd.ApplyClient
+	ArgoClient     argocd.ApplicationsClient
 	githubapp.ClientCreator
 }
 
@@ -37,20 +37,27 @@ func NewServer(config *env.Config, logger logging.SimpleLogging, argoClient *arg
 		panic(err)
 	}
 
-	prCommentHandler := &events.PRCommentHandler{
+	issueCommentHandler := &events.IssueCommentHandler{
+		ClientCreator: cc,
+		Config:        config,
+		Log:           logger,
+		ArgoClient:    *argoClient,
+	}
+	pullRequestHandler := &events.PullRequestHandler{
 		ClientCreator: cc,
 		Config:        config,
 		Log:           logger,
 		ArgoClient:    *argoClient,
 	}
 
-	webhookHandler := githubapp.NewDefaultEventDispatcher(config.Github, prCommentHandler)
+	webhookHandler := githubapp.NewDefaultEventDispatcher(config.Github, issueCommentHandler, pullRequestHandler)
+
 	return &Server{
-		Config:           config,
-		Log:              logger,
-		ClientCreator:    cc,
-		PRCommentHandler: webhookHandler,
-		ArgoClient:       *argoClient,
+		Config:         config,
+		Log:            logger,
+		ClientCreator:  cc,
+		WebhookHandler: webhookHandler,
+		ArgoClient:     *argoClient,
 	}
 }
 
@@ -64,7 +71,7 @@ func (s *Server) Health(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Start() {
 
 	http.Handle("/health", http.HandlerFunc(s.Health))
-	http.Handle(githubapp.DefaultWebhookRoute, s.PRCommentHandler)
+	http.Handle(githubapp.DefaultWebhookRoute, s.WebhookHandler)
 
 	addr := fmt.Sprintf("%s:%d", s.Config.Server.Address, s.Config.Server.Port)
 	s.Log.Info("starting server on %s", addr)

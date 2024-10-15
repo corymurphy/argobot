@@ -28,7 +28,7 @@ func NewApplyRunner(vcsClient *github.Client, config *env.Config, log logging.Si
 }
 
 // TODO: validate that the PR is in an approved/mergeable state
-func (a *ApplyRunner) Run(ctx context.Context, cmd *CommentCommand, event vsc.Event) (CommentResponse, error) {
+func (a *ApplyRunner) Run(ctx context.Context, app string, event vsc.Event) (CommentResponse, error) {
 	var resp CommentResponse
 
 	status, err := vsc.NewPullRequestStatusFetcher(ctx, a.Log, a.vcsClient).Fetch(event)
@@ -43,7 +43,7 @@ func (a *ApplyRunner) Run(ctx context.Context, cmd *CommentCommand, event vsc.Ev
 		return NewCommentResponse("pull request must be approved and in a mergeable state", event), nil
 	}
 
-	apply, err := a.ApplyClient.Apply(cmd.Application, event.Revision)
+	apply, err := a.ApplyClient.Apply(app, event.Revision)
 	if err != nil {
 		return resp, fmt.Errorf("argoclient failed while applying %w", err)
 	}

@@ -48,6 +48,7 @@ config: |
   argoCdUrl: http://argocd-server.argocd.svc.cluster.local:80
 
 webServer:
+  logLevel: info
   resources:
     requests:
       cpu: 250m

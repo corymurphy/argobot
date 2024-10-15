@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-github/v53/github"
+	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
 )
 
@@ -55,6 +56,7 @@ type Event struct {
 	Repository           Repository
 	PullRequest          PullRequest
 	InstallationProvider InstallationProvider
+	GithubClient         *github.Client
 }
 
 func (e *Event) GetInstallation() *github.Installation {
@@ -65,7 +67,7 @@ func (e *Event) HasMessage() bool {
 	return e.Message != ""
 }
 
-func NewEvent(eventType string, payload []byte) (Event, error) {
+func NewEvent(clientCreator githubapp.ClientCreator, eventType string, payload []byte) (Event, error) {
 	var event Event
 	var githubEvent GithubEvent
 	if err := json.Unmarshal(payload, &githubEvent); err != nil {
@@ -77,6 +79,10 @@ func NewEvent(eventType string, payload []byte) (Event, error) {
 		if err := json.Unmarshal(payload, &comment); err != nil {
 			return event, errors.Wrap(err, "failed to parse issue comment event payload")
 		}
+		// comment.
+
+		// comment.GetChanges().Base.SHA.From
+		// comment.Re
 
 		return Event{
 			Actor:         Actor{Name: comment.GetComment().GetUser().GetLogin()},
@@ -104,6 +110,7 @@ func NewEvent(eventType string, payload []byte) (Event, error) {
 			Actor:         Actor{Name: pr.GetPullRequest().GetUser().GetLogin()},
 			Action:        Opened,
 			IsPullRequest: true,
+			Revision:      *pr.PullRequest.Head.SHA,
 			Repository: Repository{
 				Name:  pr.GetRepo().GetName(),
 				Owner: pr.GetRepo().GetOwner().GetLogin(),
@@ -117,4 +124,39 @@ func NewEvent(eventType string, payload []byte) (Event, error) {
 	}
 
 	return event, fmt.Errorf("unsupported event %s %s", eventType, *githubEvent.Action)
+}
+
+func InitializeFromIssueComment(source github.IssueCommentEvent, revision string) Event {
+	return Event{
+		Actor:         Actor{Name: source.GetComment().GetUser().GetLogin()},
+		Action:        Comment,
+		IsPullRequest: source.GetIssue().IsPullRequest(),
+		Revision:      revision,
+		Repository: Repository{
+			Name:  source.GetRepo().GetName(),
+			Owner: source.GetRepo().GetOwner().GetLogin(),
+		},
+		PullRequest: PullRequest{
+			Number: source.GetIssue().GetNumber(),
+		},
+		Message:              *source.GetComment().Body,
+		InstallationProvider: &source,
+	}
+}
+
+func InitializeFromPullRequest(source github.PullRequestEvent) Event {
+	return Event{
+		Actor:         Actor{Name: source.GetPullRequest().GetUser().GetLogin()},
+		Action:        Opened,
+		IsPullRequest: true,
+		Revision:      *source.PullRequest.Head.SHA,
+		Repository: Repository{
+			Name:  source.GetRepo().GetName(),
+			Owner: source.GetRepo().GetOwner().GetLogin(),
+		},
+		PullRequest: PullRequest{
+			Number: source.GetPullRequest().GetNumber(),
+		},
+		Message: "",
+	}
 }

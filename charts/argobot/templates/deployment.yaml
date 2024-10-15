@@ -63,6 +63,8 @@ spec:
           readOnly: true
         {{- end }}
         env:
+        - name: ARGOBOT_LOG_LEVEL
+          value: {{ .Values.webServer.logLevel | default "info" }}
         - name: ARGOBOT_GH_WEBHOOK_SECRET
           valueFrom:
             secretKeyRef:

@@ -12,6 +12,8 @@ import (
 
 const (
 	WebhookSecretEnvVar = "ARGOBOT_GH_WEBHOOK_SECRET"
+	LogLevelEnvVar      = "ARGOBOT_LOG_LEVEL"
+	DefaultLogLevel     = logging.Info
 )
 
 var (
@@ -38,6 +40,14 @@ var run = &cobra.Command{
 		config.Github.App.PrivateKey = string(content)
 		config.Github.App.WebhookSecret = os.Getenv(WebhookSecretEnvVar)
 
+		logLevel := DefaultLogLevel
+		if serializedLevel, exists := os.LookupEnv(LogLevelEnvVar); exists {
+			logLevel, err = logging.GetLogLevel(serializedLevel)
+			if err != nil {
+				panic(err)
+			}
+		}
+
 		argoClient := &argocd.ApplicationsClient{
 			BaseUrl: config.ArgoCdUrl,
 		}
@@ -48,7 +58,7 @@ var run = &cobra.Command{
 
 		server.NewServer(
 			config,
-			logging.NewLogger(logging.Info),
+			logging.NewLogger(logLevel),
 			argoClient,
 		).Start()
 	},

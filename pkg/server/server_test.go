@@ -77,7 +77,7 @@ func Test_PRCommentHandler(t *testing.T) {
 
 		req := NewWebhookRequest(testCase.BodyPath, testCase.Config)
 
-		s.PRCommentHandler.ServeHTTP(w, req)
+		s.WebhookHandler.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Result().StatusCode)
 	}

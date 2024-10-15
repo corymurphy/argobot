@@ -44,8 +44,9 @@ func Test_LocalDevelopmentInstall(t *testing.T) {
 	options := &helm.Options{
 		KubectlOptions: kubectlOptions,
 		SetValues: map[string]string{
-			"chartVersion": strings.TrimSpace(version),
-			"image.tag":    tag,
+			"chartVersion":       strings.TrimSpace(version),
+			"image.tag":          tag,
+			"webServer.logLevel": "debug",
 		},
 		ExtraArgs: map[string][]string{
 			"upgrade": {"--timeout", "15s", "--install", "--wait-for-jobs", "--wait", "--create-namespace", "--namespace", namespace},

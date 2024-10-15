@@ -26,7 +26,7 @@ func NewApplicationResolver(githubClient *gogithub.Client, argocdClient *argocd.
 	}
 }
 
-func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, command *CommentCommand, event github.Event) ([]string, error) {
+func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, event github.Event) ([]string, error) {
 	var changedApps []string
 
 	modified, err := a.GetModifiedFiles(ctx, event)
@@ -57,7 +57,7 @@ func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, command 
 
 // copied from atlantis
 func (a *ApplicationResolver) GetModifiedFiles(ctx context.Context, event github.Event) ([]string, error) {
-	a.Log.Debug("Getting modified files for GitHub pull request %d")
+	a.Log.Debug("Getting modified files for GitHub pull request")
 	var files []string
 	nextPage := 0
 

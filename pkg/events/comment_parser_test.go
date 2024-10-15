@@ -1,11 +1,13 @@
 package events
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/corymurphy/argobot/pkg/command"
-	"github.com/corymurphy/argobot/pkg/github"
+	vsc "github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
+	"github.com/google/go-github/v53/github"
 )
 
 func Test_Comment_IsHelp(t *testing.T) {
@@ -25,10 +27,9 @@ func Test_Comment_IsHelp(t *testing.T) {
 	}
 }
 `
-	event, err := github.NewEvent("issue_comment", []byte(serialized))
-	if err != nil {
-		t.Error(err)
-	}
+	var comment github.IssueCommentEvent
+	json.Unmarshal([]byte(serialized), &comment)
+	event := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -54,10 +55,9 @@ func Test_Comment_IsBot(t *testing.T) {
 	}
 }
 `
-	event, err := github.NewEvent("issue_comment", []byte(serialized))
-	if err != nil {
-		t.Error(err)
-	}
+	var comment github.IssueCommentEvent
+	json.Unmarshal([]byte(serialized), &comment)
+	event := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -85,10 +85,9 @@ func Test_PlanHasApplicationName(t *testing.T) {
 	}
 	`
 
-	event, err := github.NewEvent("issue_comment", []byte(serialized))
-	if err != nil {
-		t.Error(err)
-	}
+	var comment github.IssueCommentEvent
+	json.Unmarshal([]byte(serialized), &comment)
+	event := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -96,9 +95,9 @@ func Test_PlanHasApplicationName(t *testing.T) {
 		t.Errorf("expected %s, got %s", command.Help, &result.Command.Name)
 	}
 
-	if result.Command.Application != "myapp" {
+	if result.Command.Applications[0] != "myapp" {
 		t.Log(result.Command)
-		t.Errorf("expected %s, got %s", "myapp", result.Command.Application)
+		t.Errorf("expected %s, got %s", "myapp", result.Command.Applications[0])
 	}
 }
 
@@ -120,10 +119,9 @@ func Test_ApplyHasApplicationName(t *testing.T) {
 	}
 	`
 
-	event, err := github.NewEvent("issue_comment", []byte(serialized))
-	if err != nil {
-		t.Error(err)
-	}
+	var comment github.IssueCommentEvent
+	json.Unmarshal([]byte(serialized), &comment)
+	event := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -131,8 +129,8 @@ func Test_ApplyHasApplicationName(t *testing.T) {
 		t.Errorf("expected %s, got %s", command.Apply, &result.Command.Name)
 	}
 
-	if result.Command.Application != "myapp" {
+	if result.Command.Applications[0] != "myapp" {
 		t.Log(result.Command)
-		t.Errorf("expected %s, got %s", "myapp", result.Command.Application)
+		t.Errorf("expected %s, got %s", "myapp", result.Command.Applications[0])
 	}
 }

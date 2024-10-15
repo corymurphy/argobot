@@ -10,7 +10,7 @@ kubectl create secret generic argobot \
   --content <kube-context> \
   --from-file=key.pem=path/to/github_app_privatekey \
   --from-literal=webhookSecret=<github_webhook_secret> \
-  --from-literal=arocdApiKey=<argocd_api_key>
+  --from-literal=argocdApiKey=<argocd_api_key>
 
 helm install \
   oci://ghcr.io/corymurphy/helm-charts/argobot argobot

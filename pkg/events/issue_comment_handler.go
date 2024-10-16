@@ -52,7 +52,6 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 
 	comment := NewCommentParser(h.Log).Parse(event)
 	if (comment.Ignore || comment.ImmediateResponse) && !comment.HasResponseComment {
-		h.Log.Debug("ignoring comment")
 		return nil
 	}
 
@@ -69,9 +68,11 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 	var apps []string
 	if comment.Command.ExplicitApplication {
 		apps = comment.Command.Applications
+		h.Log.Debug("apps specified by comment comment %v", apps)
 	} else {
 		resolver := NewApplicationResolver(client, &h.ArgoClient, h.Log)
 		apps, err = resolver.FindApplicationNames(ctx, event)
+		h.Log.Debug("apps discovered %v", apps)
 		if err != nil {
 			h.Log.Debug("pull request did not change any applications managed by argocd")
 			return nil
@@ -86,11 +87,14 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 		for _, app := range apps {
 			var err error = nil
 
+			h.Log.Debug("running plan for app %s against revision %s", app, event.Revision)
 			plan, diff, err := planner.Plan(ctx, app, event.Revision)
 			if err != nil {
 				h.Log.Err(err, fmt.Sprintf("unable to plan: %s", plan))
 				return err
 			}
+
+			h.Log.Debug("%s diff %t", app, diff)
 			var comment string
 			if diff {
 				comment = fmt.Sprintf("argocd plan for `%s`\n\n", app) + "```diff\n" + plan + "\n```"
@@ -99,7 +103,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 				h.Log.Info(plan)
 			}
 
-			commenter.Plan(&event, app, command.Plan.String(), comment)
+			err = commenter.Plan(&event, app, command.Plan.String(), comment)
 			if err != nil {
 				h.Log.Err(err, fmt.Sprintf("error while planning %s", app))
 			}

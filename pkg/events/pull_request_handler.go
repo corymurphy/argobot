@@ -13,7 +13,6 @@ import (
 	"github.com/corymurphy/argobot/pkg/utils"
 	"github.com/google/go-github/v53/github"
 	"github.com/palantir/go-githubapp/githubapp"
-	"github.com/pkg/errors"
 )
 
 var validPullActions = []string{"opened", "reopened", "ready_for_review"}
@@ -61,6 +60,7 @@ func (h *PullRequestHandler) Handle(ctx context.Context, eventType string, deliv
 
 	for _, app := range apps {
 
+		h.Log.Debug("running plan for app %s against revision %s", app, event.Revision)
 		plan, diff, err := planner.Plan(ctx, app, event.Revision)
 		if err != nil {
 			h.Log.Err(err, fmt.Sprintf("unable to plan: %s", plan))
@@ -74,8 +74,12 @@ func (h *PullRequestHandler) Handle(ctx context.Context, eventType string, deliv
 			comment = "no diff detected, current state is up to date with this revision."
 		}
 
-		commenter.Plan(&event, app, command.Plan.String(), comment)
+		err = commenter.Plan(&event, app, command.Plan.String(), comment)
+		if err != nil {
+			h.Log.Err(err, fmt.Sprintf("error while planning %s", app))
+		}
 	}
 
-	return errors.Errorf("unsupported argo command")
+	h.Log.Debug("ignoring unsupported event %s %s", eventType, *pull.Action)
+	return nil
 }

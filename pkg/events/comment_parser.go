@@ -166,6 +166,16 @@ func (c *CommentParser) Parse(event vsc.Event) *CommentParseResult {
 
 	flagSet.Parse(args[2:])
 
+	if app == "" {
+		return &CommentParseResult{
+			Command: &CommentCommand{
+				Name:                name,
+				Applications:        []string{},
+				ExplicitApplication: false,
+			},
+		}
+	}
+
 	if !c.isValidApplicationName(app) {
 		c.Log.Debug("invalid application name %s", app)
 		return &CommentParseResult{

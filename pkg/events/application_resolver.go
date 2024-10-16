@@ -9,6 +9,7 @@ import (
 	"github.com/corymurphy/argobot/pkg/argocd"
 	"github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
+	"github.com/corymurphy/argobot/pkg/utils"
 	gogithub "github.com/google/go-github/v53/github"
 )
 
@@ -46,7 +47,7 @@ func (a *ApplicationResolver) FindApplicationNames(ctx context.Context, event gi
 		a.Log.Debug(fmt.Sprintf("name: %s | path: %s", name, path))
 
 		for _, file := range modified {
-			if strings.Contains(file, path) && app.Spec.Source.RepoURL == event.Repository.HtmlUrl() {
+			if !utils.StringInSlice(name, changedApps) && strings.Contains(file, path) && app.Spec.Source.RepoURL == event.Repository.HtmlUrl() {
 				changedApps = append(changedApps, name)
 			}
 		}

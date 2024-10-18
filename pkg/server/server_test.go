@@ -40,16 +40,14 @@ func Test_HealthCheck(t *testing.T) {
 func Test_PRCommentHandler(t *testing.T) {
 
 	requests := map[string]bool{
-		"/app/installations/345345345/access_tokens":     false,
-		"/repos/atlas8518/argocd-data/issues/1/comments": false,
-		"/repos/atlas8518/argocd-data/pulls/1":           false,
-		"/api/v1/applications/testapp/managed-resources": false,
-		"/api/v1/applications/testapp":                   false,
+		"/app/installations/345345345/access_tokens":                    false,
+		"/repos/atlas8518/argocd-data/issues/1/comments":                false,
+		"/repos/atlas8518/argocd-data/pulls/1":                          false,
+		"/api/v1/applications/testapp/managed-resources":                false,
+		"/api/v1/applications/testapp":                                  false,
+		"/repos/atlas8518/argocd-data/issues/comments/456456/reactions": false,
 	}
 	mu := sync.Mutex{}
-
-	// ctx := context.Background()
-
 	mockServer := mockServer(requests, &mu, t)
 	defer mockServer.Close()
 
@@ -239,6 +237,12 @@ func mockServer(requests map[string]bool, mu *sync.Mutex, t *testing.T) *httptes
 		requests["/api/v1/settings"] = true
 		mu.Unlock()
 		fmt.Fprint(w, string(response))
+	})
+	router.HandleFunc("/repos/atlas8518/argocd-data/issues/comments/456456/reactions", func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requests["/repos/atlas8518/argocd-data/issues/comments/456456/reactions"] = true
+		mu.Unlock()
+		fmt.Fprint(w, string(""))
 	})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		t.Error(r)

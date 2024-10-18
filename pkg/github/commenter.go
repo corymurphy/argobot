@@ -11,6 +11,11 @@ import (
 
 const maxCommentLength = 32768
 
+type VscCommenter interface {
+	Plan(event *Event, app string, command string, comment string)
+	Comment(event *Event, comment *string)
+}
+
 type Commenter struct {
 	client *github.Client
 	log    logging.SimpleLogging

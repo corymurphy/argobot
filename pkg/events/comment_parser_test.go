@@ -29,7 +29,7 @@ func Test_Comment_IsHelp(t *testing.T) {
 `
 	var comment github.IssueCommentEvent
 	json.Unmarshal([]byte(serialized), &comment)
-	event := vsc.InitializeFromIssueComment(comment, "")
+	event, _ := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -57,7 +57,7 @@ func Test_Comment_IsBot(t *testing.T) {
 `
 	var comment github.IssueCommentEvent
 	json.Unmarshal([]byte(serialized), &comment)
-	event := vsc.InitializeFromIssueComment(comment, "")
+	event, _ := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -87,7 +87,7 @@ func Test_PlanHasApplicationName(t *testing.T) {
 
 	var comment github.IssueCommentEvent
 	json.Unmarshal([]byte(serialized), &comment)
-	event := vsc.InitializeFromIssueComment(comment, "")
+	event, _ := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)
@@ -121,7 +121,7 @@ func Test_ApplyHasApplicationName(t *testing.T) {
 
 	var comment github.IssueCommentEvent
 	json.Unmarshal([]byte(serialized), &comment)
-	event := vsc.InitializeFromIssueComment(comment, "")
+	event, _ := vsc.InitializeFromIssueComment(comment, "")
 	parser := NewCommentParser(logging.NewLogger(logging.Silent))
 
 	result := parser.Parse(event)

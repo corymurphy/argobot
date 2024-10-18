@@ -68,7 +68,7 @@ func (e *Event) HasMessage() bool {
 	return e.Message != ""
 }
 
-func InitializeFromIssueComment(source github.IssueCommentEvent, revision string) Event {
+func InitializeFromIssueComment(source github.IssueCommentEvent, revision string) (Event, *int64) {
 	return Event{
 		Actor:         Actor{Name: source.GetComment().GetUser().GetLogin()},
 		Action:        Comment,
@@ -83,7 +83,7 @@ func InitializeFromIssueComment(source github.IssueCommentEvent, revision string
 		},
 		Message:              *source.GetComment().Body,
 		InstallationProvider: &source,
-	}
+	}, source.Comment.ID
 }
 
 func InitializeFromPullRequest(source github.PullRequestEvent) Event {

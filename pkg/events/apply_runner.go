@@ -31,7 +31,7 @@ func NewApplyRunner(vcsClient *github.Client, config *env.Config, log logging.Si
 func (a *ApplyRunner) Run(ctx context.Context, app string, event vsc.Event) (CommentResponse, error) {
 	var resp CommentResponse
 
-	status, err := vsc.NewPullRequestStatusFetcher(ctx, a.Log, a.vcsClient).Fetch(event)
+	status, err := vsc.NewPullRequestStatusFetcher(a.Log, a.vcsClient).Fetch(ctx, event)
 	if err != nil {
 		return resp, fmt.Errorf("unable to get status of pr %w", err)
 	}

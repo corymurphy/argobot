@@ -10,32 +10,30 @@ import (
 )
 
 type VscPullRequestStatusFetcher interface {
-	Fetch(event Event) (models.PullRequestStatus, error)
+	Fetch(ctx context.Context, event Event) (models.PullRequestStatus, error)
 }
 
 type GithubPullRequestStatusFetcher struct {
 	client *github.Client
-	ctx    context.Context
 	logger logging.SimpleLogging
 }
 
-func NewPullRequestStatusFetcher(ctx context.Context, logger logging.SimpleLogging, client *github.Client) VscPullRequestStatusFetcher {
+func NewPullRequestStatusFetcher(logger logging.SimpleLogging, client *github.Client) VscPullRequestStatusFetcher {
 	return &GithubPullRequestStatusFetcher{
-		ctx:    ctx,
 		client: client,
 		logger: logger,
 	}
 }
 
-func (g *GithubPullRequestStatusFetcher) Fetch(event Event) (status models.PullRequestStatus, err error) {
+func (g *GithubPullRequestStatusFetcher) Fetch(ctx context.Context, event Event) (status models.PullRequestStatus, err error) {
 
 	g.logger.Debug("getting approval status of pull request %d", event.PullRequest.Number)
-	approvalStatus, err := g.PullIsApproved(event)
+	approvalStatus, err := g.PullIsApproved(ctx, event)
 	if err != nil {
 		return status, errors.Wrapf(err, "fetching pull approval status for repo: %s/%s, and pull number: %d", event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
 	}
 
-	mergeable, err := g.PullIsMergeable(event, "")
+	mergeable, err := g.PullIsMergeable(ctx, event, "")
 	if err != nil {
 		return status, errors.Wrapf(err, "fetching mergeability status for repo: %s/%s, and pull number: %d", event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
 	}
@@ -46,8 +44,8 @@ func (g *GithubPullRequestStatusFetcher) Fetch(event Event) (status models.PullR
 	}, err
 }
 
-func (g *GithubPullRequestStatusFetcher) PullIsApproved(event Event) (approvalStatus models.ApprovalStatus, err error) {
-	g.logger.Debug("Checking if GitHub pull request %d is approved", event.PullRequest.Number)
+func (g *GithubPullRequestStatusFetcher) PullIsApproved(ctx context.Context, event Event) (approvalStatus models.ApprovalStatus, err error) {
+	g.logger.Debug("checking if pull request %d is approved", event.PullRequest.Number)
 	nextPage := 0
 	for {
 		opts := github.ListOptions{
@@ -56,7 +54,7 @@ func (g *GithubPullRequestStatusFetcher) PullIsApproved(event Event) (approvalSt
 		if nextPage != 0 {
 			opts.Page = nextPage
 		}
-		pageReviews, resp, err := g.client.PullRequests.ListReviews(g.ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, &opts)
+		pageReviews, resp, err := g.client.PullRequests.ListReviews(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, &opts)
 		if resp != nil {
 			g.logger.Debug("GET /repos/%v/%v/pulls/%d/reviews returned: %v", event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, resp.StatusCode)
 		}
@@ -82,9 +80,9 @@ func (g *GithubPullRequestStatusFetcher) PullIsApproved(event Event) (approvalSt
 
 // TODO: complete the bypass functionality from atlantis
 // TODO: check if approved by codeowner
-func (g *GithubPullRequestStatusFetcher) PullIsMergeable(event Event, vcsstatusname string) (bool, error) {
+func (g *GithubPullRequestStatusFetcher) PullIsMergeable(ctx context.Context, event Event, vcsstatusname string) (bool, error) {
 	g.logger.Debug("Checking if GitHub pull request %d is mergeable", event.PullRequest.Number)
-	githubPR, _, err := g.client.PullRequests.Get(g.ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
+	githubPR, _, err := g.client.PullRequests.Get(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
 	if err != nil {
 		return false, errors.Wrap(err, "getting pull request")
 	}

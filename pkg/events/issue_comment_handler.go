@@ -48,7 +48,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 		h.Log.Err(err, "unable to get revision from pull request")
 		return nil
 	}
-	event := vsc.InitializeFromIssueComment(issue, *pr.GetHead().SHA)
+	event, commentId := vsc.InitializeFromIssueComment(issue, *pr.GetHead().SHA)
 
 	comment := NewCommentParser(h.Log).Parse(event)
 	if (comment.Ignore || comment.ImmediateResponse) && !comment.HasResponseComment {
@@ -63,6 +63,11 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 		if _, _, err := client.Issues.CreateComment(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number, &prComment); err != nil {
 			return err
 		}
+	}
+
+	_, _, err = client.Reactions.CreateIssueCommentReaction(ctx, event.Repository.Owner, event.Repository.Name, *commentId, "eyes")
+	if err != nil {
+		h.Log.Err(err, "unable to create reaction on comment")
 	}
 
 	var apps []string
@@ -117,10 +122,14 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 			h.Log.Info("requested apply with more than 1 app, only one app allowed when applying")
 			return nil
 		}
+		if !comment.Command.ExplicitApplication {
+			h.Log.Info("apply does not supply auto discovery. an application must be explicitly defined.")
+			return nil
+		}
 		go func() {
+			applyContext, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
 			for _, app := range apps {
-				applyContext, cancel := context.WithTimeout(ctx, 60*time.Second)
-				defer cancel()
 				apply := NewApplyRunner(client, h.Config, h.Log, &h.ArgoClient)
 				response, err := apply.Run(applyContext, app, event)
 				if err != nil {
@@ -128,7 +137,11 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 					return
 				}
 				comment := fmt.Sprintf("apply result for `%s`\n\n", app) + "```\n" + response.Message + "\n```"
-				commenter.Comment(&event, &comment)
+				err = commenter.Comment(&event, &comment)
+				if err != nil {
+					h.Log.Err(err, "unable to comment with apply result")
+					return
+				}
 			}
 		}()
 		return nil

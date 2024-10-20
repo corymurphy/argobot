@@ -39,6 +39,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 
 	installationID := githubapp.GetInstallationIDFromEvent(&issue)
 	client, err := h.NewInstallationClient(installationID)
+	vscClient := vsc.NewClient(client, h.Log)
 	if err != nil {
 		return err
 	}
@@ -84,7 +85,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 		}
 	}
 
-	commenter := vsc.NewCommenter(client, h.Log, ctx)
+	commenter := vsc.NewCommenter(client, h.Log, context.TODO())
 
 	if comment.Command.Name == command.Plan {
 		planner := argocd.NewPlanner(&h.ArgoClient, h.Log)
@@ -112,6 +113,15 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 			if err != nil {
 				h.Log.Err(err, fmt.Sprintf("error while planning %s", app))
 			}
+
+			status := fmt.Sprintf("argobot/plan %s", app)
+			description := "planned successfully"
+			url := fmt.Sprintf("http://localhost:8081/applications/argocd/%s", app) // TODO
+
+			err = vscClient.SetStatusCheck(context.TODO(), event, vsc.SuccessCommitState, status, description, url)
+			if err != nil {
+				h.Log.Err(err, fmt.Sprintf("error while setting status check for %s", app))
+			}
 		}
 		return nil
 	}
@@ -123,7 +133,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 			return nil
 		}
 		if !comment.Command.ExplicitApplication {
-			h.Log.Info("apply does not supply auto discovery. an application must be explicitly defined.")
+			h.Log.Info("apply does not support auto discovery. an application must be explicitly defined.")
 			return nil
 		}
 		go func() {
@@ -136,6 +146,16 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 					h.Log.Err(err, "unable to apply")
 					return
 				}
+
+				status := fmt.Sprintf("argobot/apply %s", app)
+				description := "applied successfully"
+				url := fmt.Sprintf("%s/applications/argocd/%s", h.Config.ArgoCdWebUrl, app) // TODO
+
+				err = vscClient.SetStatusCheck(context.TODO(), event, vsc.SuccessCommitState, status, description, url)
+				if err != nil {
+					h.Log.Err(err, fmt.Sprintf("error while setting status check for %s", app))
+				}
+
 				comment := fmt.Sprintf("apply result for `%s`\n\n", app) + "```\n" + response.Message + "\n```"
 				err = commenter.Comment(&event, &comment)
 				if err != nil {

@@ -49,7 +49,7 @@ var run = &cobra.Command{
 		}
 
 		argoClient := &argocd.ApplicationsClient{
-			BaseUrl: config.ArgoCdUrl,
+			BaseUrl: config.ArgoCdApiUrl,
 		}
 
 		if apiKey, exists := os.LookupEnv("ARGOBOT_ARGOCD_API_KEY"); exists {

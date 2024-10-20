@@ -45,7 +45,8 @@ config: |
       integration_id: 77423
 
   privateKeyFilePath: /app/key.pem
-  argoCdUrl: http://argocd-server.argocd.svc.cluster.local:80
+  argoCdApiUrl: http://argocd-server.argocd.svc.cluster.local:80
+  argoCdWebUrl: http://localhost:8081
 
 webServer:
   logLevel: info

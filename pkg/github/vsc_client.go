@@ -12,9 +12,15 @@ type VscClient struct {
 	logger logging.SimpleLogging
 }
 
-func (v *VscClient) SetStatusCheck(ctx context.Context, event Event, state CommitState, context string, description string) error {
+func NewClient(client *github.Client, logger logging.SimpleLogging) *VscClient {
+	return &VscClient{
+		client: client,
+		logger: logger,
+	}
+}
 
-	url := ""
+func (v *VscClient) SetStatusCheck(ctx context.Context, event Event, state CommitState, context string, description string, url string) error {
+
 	status := &github.RepoStatus{
 		State:       github.String(state.String()),
 		Description: github.String(description),

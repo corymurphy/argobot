@@ -78,8 +78,6 @@ func (g *GithubPullRequestStatusFetcher) PullIsApproved(ctx context.Context, eve
 	return approvalStatus, nil
 }
 
-// TODO: complete the bypass functionality from atlantis
-// TODO: check if approved by codeowner
 func (g *GithubPullRequestStatusFetcher) PullIsMergeable(ctx context.Context, event Event, vcsstatusname string) (bool, error) {
 	g.logger.Debug("Checking if GitHub pull request %d is mergeable", event.PullRequest.Number)
 	githubPR, _, err := g.client.PullRequests.Get(ctx, event.Repository.Owner, event.Repository.Name, event.PullRequest.Number)
@@ -87,60 +85,15 @@ func (g *GithubPullRequestStatusFetcher) PullIsMergeable(ctx context.Context, ev
 		return false, errors.Wrap(err, "getting pull request")
 	}
 
+	vscClient := NewClient(g.client, g.logger)
+
 	state := githubPR.GetMergeableState()
 	if state != "clean" && state != "unstable" && state != "has_hooks" {
-		//mergeable bypass apply code hidden by feature flag
-		// if g.config.AllowMergeableBypassApply {
-		// 	logger.Debug("AllowMergeableBypassApply feature flag is enabled - attempting to bypass apply from mergeable requirements")
-		// 	if state == "blocked" {
-		// 		//check status excluding atlantis apply
-		// 		status, err := g.GetCombinedStatusMinusApply(logger, repo, githubPR, vcsstatusname)
-		// 		if err != nil {
-		// 			return false, errors.Wrap(err, "getting pull request status")
-		// 		}
-
-		// 		//check to see if pr is approved using reviewDecision
-		// 		approved, err := g.GetPullReviewDecision(pull)
-		// 		if err != nil {
-		// 			return false, errors.Wrap(err, "getting pull request reviewDecision")
-		// 		}
-
-		// 		//if all other status checks EXCEPT atlantis/apply are successful, and the PR is approved based on reviewDecision, let it proceed
-		// 		if status && approved {
-		// 			return true, nil
-		// 		}
-		// 	}
-		// }
-
-		return false, nil
+		approved, err := vscClient.GetPullReviewDecision(event)
+		if err != nil {
+			return false, errors.Wrap(err, "getting pull request reviewDecision")
+		}
+		return approved, nil
 	}
 	return true, nil
 }
-
-// func (g *GithubPullRequestStatusFetcher) GetPullReviewDecision(pull models.PullRequest) (approvalStatus bool, err error) {
-// 	var query struct {
-// 		Repository struct {
-// 			PullRequest struct {
-// 				ReviewDecision string
-// 			} `graphql:"pullRequest(number: $number)"`
-// 		} `graphql:"repository(owner: $owner, name: $name)"`
-// 	}
-
-// 	variables := map[string]interface{}{
-// 		"owner":  githubv4.String(pull.Owner),
-// 		"name":   githubv4.String(pull.Name),
-// 		"number": githubv4.Int(pull.Number),
-// 	}
-
-// 	// g.client.BaseURL.Query()
-// 	err = g.v4Client.Query(g.ctx, &query, variables)
-// 	if err != nil {
-// 		return approvalStatus, errors.Wrap(err, "getting reviewDecision")
-// 	}
-
-// 	if query.Repository.PullRequest.ReviewDecision == "APPROVED" || len(query.Repository.PullRequest.ReviewDecision) == 0 {
-// 		return true, nil
-// 	}
-
-// 	return false, nil
-// }

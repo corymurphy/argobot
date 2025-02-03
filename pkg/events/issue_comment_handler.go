@@ -119,6 +119,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 			url := fmt.Sprintf("http://localhost:8081/applications/argocd/%s", app) // TODO
 
 			err = vscClient.SetStatusCheck(context.TODO(), event, vsc.SuccessCommitState, status, description, url)
+			err = vscClient.SetStatusCheck(context.TODO(), event, vsc.SuccessCommitState, "arbobot/plan", description, url)
 			if err != nil {
 				h.Log.Err(err, fmt.Sprintf("error while setting status check for %s", app))
 			}

@@ -1,6 +1,6 @@
 # gcr.io/distroless/static-debian11
 
-FROM golang:1.22.8-alpine AS builder
+FROM golang:1.23.5-alpine AS builder
 
 ARG ALPINE_TAG=latest
 

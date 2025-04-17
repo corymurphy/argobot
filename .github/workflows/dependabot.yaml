@@ -1,0 +1,49 @@
+name: dependabot
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - main
+
+jobs:
+  update-version:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          
+      - name: update version
+        run: |
+          # Get current version
+          # CURRENT_VERSION=$(grep "version:" charts/argobot/Chart.yaml | awk '{print $2}')
+          CURRENT_VERSION=$(cat version)
+          # Increment patch version
+          MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+          MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+          PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          
+          # Update both version and appVersion in the Chart.yaml
+          sed -i "s/version: $CURRENT_VERSION/version: $NEW_VERSION/" charts/argobot/Chart.yaml
+          sed -i "s/appVersion: $CURRENT_VERSION/appVersion: $NEW_VERSION/" charts/argobot/Chart.yaml
+
+          # Update version file
+          echo $NEW_VERSION > version
+          
+          echo "Updated version from $CURRENT_VERSION to $NEW_VERSION"
+      
+      - name: commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add charts/argobot/Chart.yaml
+          git commit -m "chore: bump chart version for dependabot pr"
+          git push

@@ -24,14 +24,13 @@ jobs:
           # Get current version
           # CURRENT_VERSION=$(grep "version:" charts/argobot/Chart.yaml | awk '{print $2}')
           CURRENT_VERSION=$(cat version)
-          # Increment patch version
+
           MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
           MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
           PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
           NEW_PATCH=$((PATCH + 1))
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
           
-          # Update both version and appVersion in the Chart.yaml
           sed -i "s/version: $CURRENT_VERSION/version: $NEW_VERSION/" charts/argobot/Chart.yaml
           sed -i "s/appVersion: $CURRENT_VERSION/appVersion: $NEW_VERSION/" charts/argobot/Chart.yaml
 
@@ -44,6 +43,6 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add charts/argobot/Chart.yaml
+          git add charts/argobot/Chart.yaml version
           git commit -m "chore: bump chart version for dependabot pr"
           git push

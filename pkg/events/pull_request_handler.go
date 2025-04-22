@@ -71,7 +71,7 @@ func (h *PullRequestHandler) Handle(ctx context.Context, eventType string, deliv
 		if diff {
 			comment = fmt.Sprintf("argocd plan for `%s`\n\n", app) + "```diff\n" + plan + "\n```"
 		} else {
-			comment = "no diff detected, current state is up to date with this revision."
+			comment = "no diff detected for `" + app + "`, current state is up to date with this revision."
 		}
 
 		err = commenter.Plan(&event, app, command.Plan.String(), comment)

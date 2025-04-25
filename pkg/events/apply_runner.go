@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/corymurphy/argobot/pkg/argocd"
@@ -16,14 +17,15 @@ type ApplyRunner struct {
 	Config      *env.Config
 	Log         logging.SimpleLogging
 	ApplyClient argocd.ApplyClient
+	Argo        *argocd.ApplicationsClient
 }
 
-func NewApplyRunner(vcsClient *github.Client, config *env.Config, log logging.SimpleLogging, applyClient argocd.ApplyClient) *ApplyRunner {
+func NewApplyRunner(vcsClient *github.Client, config *env.Config, log logging.SimpleLogging, argo *argocd.ApplicationsClient) *ApplyRunner {
 	return &ApplyRunner{
-		vcsClient:   vcsClient,
-		Config:      config,
-		Log:         log,
-		ApplyClient: applyClient,
+		vcsClient: vcsClient,
+		Config:    config,
+		Log:       log,
+		Argo:      argo,
 	}
 }
 
@@ -48,5 +50,19 @@ func (a *ApplyRunner) Run(ctx context.Context, app string, event vsc.Event) (Com
 		return resp, fmt.Errorf("argoclient failed while applying %w", err)
 	}
 	a.Log.Debug(apply)
-	return NewCommentResponse(apply, event), nil
+
+	state, err := a.Argo.Get(app)
+	if err != nil {
+		return resp, fmt.Errorf("failed to get application state: %w", err)
+	}
+	jsonState, err := json.Marshal(state)
+	if err != nil {
+		return resp, fmt.Errorf("failed to marshal application state: %w", err)
+	}
+	a.Log.Debug(string(jsonState))
+
+	template := "Apply for %s in phase %s with message\n\n```\n%s```"
+	response := fmt.Sprintf(template, app, event.Revision, string(jsonState))
+
+	return NewCommentResponse(response, event), nil
 }

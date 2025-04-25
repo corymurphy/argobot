@@ -105,7 +105,8 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 			if diff {
 				comment = fmt.Sprintf("argocd plan for `%s`\n\n", app) + "```diff\n" + plan + "\n```"
 			} else {
-				comment = "no diff detected, current state is up to date with this revision."
+				comment = "no diff detected for `%s`, current state is up to date with this revision."
+				comment = fmt.Sprintf(comment, app)
 				h.Log.Info(plan)
 			}
 
@@ -157,8 +158,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 					h.Log.Err(err, fmt.Sprintf("error while setting status check for %s", app))
 				}
 
-				comment := fmt.Sprintf("apply result for `%s`\n\n", app) + "```\n" + response.Message + "\n```"
-				err = commenter.Comment(&event, &comment)
+				err = commenter.Comment(&event, &response.Message)
 				if err != nil {
 					h.Log.Err(err, "unable to comment with apply result")
 					return

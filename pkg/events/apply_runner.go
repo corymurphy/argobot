@@ -13,11 +13,10 @@ import (
 )
 
 type ApplyRunner struct {
-	vcsClient   *github.Client
-	Config      *env.Config
-	Log         logging.SimpleLogging
-	ApplyClient argocd.ApplyClient
-	Argo        *argocd.ApplicationsClient
+	vcsClient *github.Client
+	Config    *env.Config
+	Log       logging.SimpleLogging
+	Argo      *argocd.ApplicationsClient
 }
 
 func NewApplyRunner(vcsClient *github.Client, config *env.Config, log logging.SimpleLogging, argo *argocd.ApplicationsClient) *ApplyRunner {
@@ -29,7 +28,6 @@ func NewApplyRunner(vcsClient *github.Client, config *env.Config, log logging.Si
 	}
 }
 
-// TODO: validate that the PR is in an approved/mergeable state
 func (a *ApplyRunner) Run(ctx context.Context, app string, event vsc.Event) (CommentResponse, error) {
 	var resp CommentResponse
 
@@ -45,7 +43,7 @@ func (a *ApplyRunner) Run(ctx context.Context, app string, event vsc.Event) (Com
 		return NewCommentResponse("pull request must be approved and in a mergeable state", event), nil
 	}
 
-	apply, err := a.ApplyClient.Apply(app, event.Revision)
+	apply, err := a.Argo.Apply(app, event.Revision)
 	if err != nil {
 		return resp, fmt.Errorf("argoclient failed while applying %w", err)
 	}

@@ -59,8 +59,8 @@ func (a *ApplyRunner) Run(ctx context.Context, app string, event vsc.Event) (Com
 	}
 	a.Log.Debug(string(jsonState))
 
-	template := "Apply for %s in phase %s with message\n\n```\n%s```"
-	response := fmt.Sprintf(template, app, event.Revision, string(jsonState))
+	template := "apply for `%s` in phase %s with message\n\n```\n%s```"
+	response := fmt.Sprintf(template, app, state.Status.Health, string(jsonState))
 
 	return NewCommentResponse(response, event), nil
 }

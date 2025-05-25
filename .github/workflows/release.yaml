@@ -63,6 +63,8 @@ jobs:
         git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
     - uses: azure/setup-helm@v4
+      with:
+        version: v3.17.3
 
     - id: package
       env:

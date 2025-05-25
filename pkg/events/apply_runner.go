@@ -59,8 +59,8 @@ func (a *ApplyRunner) Run(ctx context.Context, app string, event vsc.Event) (Com
 	}
 	a.Log.Debug(string(jsonState))
 
-	template := "apply for `%s` in phase %s with message\n\n```\n%s```"
-	response := fmt.Sprintf(template, app, state.Status.Health, string(jsonState))
+	template := "applied `%s` with sync status `%s` - [view application in argocd](%s/applications/%s)"
+	response := fmt.Sprintf(template, app, state.Status.Health.Message, a.Config.ArgoCdWebUrl, app)
 
 	return NewCommentResponse(response, event), nil
 }

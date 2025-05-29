@@ -212,3 +212,30 @@ func (c *ApplicationsClient) GetSettings() (settings.Settings, error) {
 
 	return settings, nil
 }
+
+func (c *ApplicationsClient) PutApplicationSpec(name string, spec *argoappv1.ApplicationSpec) error {
+	data, err := json.Marshal(spec)
+	if err != nil {
+		return fmt.Errorf("failed to marshal application spec: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/api/v1/applications/%s/spec", c.BaseUrl, name)
+	req, err := http.NewRequest("PUT", url, bytes.NewReader(data))
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.Token))
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request to update application spec: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to update application spec: %s", body)
+	}
+	return nil
+}

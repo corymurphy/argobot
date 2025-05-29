@@ -57,6 +57,7 @@ func (h *PullRequestHandler) Handle(ctx context.Context, eventType string, deliv
 
 	commenter := vsc.NewCommenter(client, h.Log, ctx)
 	planner := argocd.NewPlanner(&h.ArgoClient, h.Log)
+	locker := argocd.NewLocker(&h.ArgoClient, h.Log)
 
 	for _, app := range apps {
 
@@ -65,6 +66,11 @@ func (h *PullRequestHandler) Handle(ctx context.Context, eventType string, deliv
 		if err != nil {
 			h.Log.Err(err, fmt.Sprintf("unable to plan: %s", plan))
 			return err
+		}
+
+		err = locker.Lock(ctx, app, fmt.Sprint(event.PullRequest.Number))
+		if err != nil {
+			h.Log.Err(err, fmt.Sprintf("unable to lock application %s", app))
 		}
 
 		var comment string

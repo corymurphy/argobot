@@ -109,7 +109,6 @@ func NewServerTestCases(mockServer *httptest.Server) *[]ServerTestCase {
 	config.Github.V3APIURL = mockServer.URL
 	config.Github.WebURL = mockServer.URL
 	config.Github.App.PrivateKey = string(content)
-	// config.ArgoConfig.Server = strings.ReplaceAll(mockServer.URL, "http://", "")
 
 	return &[]ServerTestCase{
 		{
@@ -238,6 +237,12 @@ func mockServer(requests map[string]bool, mu *sync.Mutex, t *testing.T) *httptes
 		requests["/api/v1/settings"] = true
 		mu.Unlock()
 		fmt.Fprint(w, string(response))
+	})
+	router.HandleFunc("/api/v1/applications/testapp/spec", func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requests["/api/v1/applications/testapp/spec"] = true
+		mu.Unlock()
+		fmt.Fprint(w, string(""))
 	})
 	router.HandleFunc("/repos/atlas8518/argocd-data/issues/comments/456456/reactions", func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()

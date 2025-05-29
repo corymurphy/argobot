@@ -89,9 +89,15 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 
 	if comment.Command.Name == command.Plan {
 		planner := argocd.NewPlanner(&h.ArgoClient, h.Log)
+		locker := argocd.NewLocker(&h.ArgoClient, h.Log)
 
 		for _, app := range apps {
 			var err error = nil
+
+			err = locker.Lock(ctx, app, fmt.Sprint(event.PullRequest.Number))
+			if err != nil {
+				h.Log.Err(err, fmt.Sprintf("unable to lock application %s", app))
+			}
 
 			h.Log.Debug("running plan for app %s against revision %s", app, event.Revision)
 			plan, diff, err := planner.Plan(ctx, app, event.Revision)
@@ -120,6 +126,9 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 			url := fmt.Sprintf("http://localhost:8081/applications/argocd/%s", app) // TODO
 
 			err = vscClient.SetStatusCheck(context.TODO(), event, vsc.SuccessCommitState, status, description, url)
+			if err != nil {
+				h.Log.Err(err, fmt.Sprintf("error while setting status check for %s", app))
+			}
 			err = vscClient.SetStatusCheck(context.TODO(), event, vsc.SuccessCommitState, "arbobot/plan", description, url)
 			if err != nil {
 				h.Log.Err(err, fmt.Sprintf("error while setting status check for %s", app))

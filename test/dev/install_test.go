@@ -10,7 +10,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/shell"
 )
 
 func Test_LocalDevelopmentInstall(t *testing.T) {
@@ -21,22 +20,23 @@ func Test_LocalDevelopmentInstall(t *testing.T) {
 	helmChartPath, _ := filepath.Abs("../../charts/argobot")
 	kubectlOptions := k8s.NewKubectlOptions(kubeContext, "", namespace)
 
-	version := "0.2.0"
+	version := "0.25.0"
 
 	tag := utils.InsecureRandom(8)
 	image := fmt.Sprintf("ghcr.io/corymurphy/containers/argobot:%s", tag)
 	buildOptions := &docker.BuildOptions{
 		Tags: []string{image},
+		Load: true,
 	}
 	docker.Build(t, "../../", buildOptions)
-	shell.RunCommand(t, shell.Command{
-		Command: "kind",
-		Args: []string{
-			"load",
-			"docker-image",
-			image,
-		},
-	})
+	// shell.RunCommand(t, shell.Command{
+	// 	Command: "kind",
+	// 	Args: []string{
+	// 		"load",
+	// 		"docker-image",
+	// 		image,
+	// 	},
+	// })
 
 	k8s.CreateNamespaceE(t, kubectlOptions, namespace)
 	k8s.KubectlApply(t, kubectlOptions, "../../.secrets/secrets.yaml")

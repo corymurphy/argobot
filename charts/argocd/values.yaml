@@ -20,6 +20,13 @@ argo-cd:
     cm:
       admin.enabled: true
       accounts.admin: apiKey, login
+      accounts.developer: apiKey
+    rbac:
+      policy.csv: |
+        p, developer, applications, get, */*, allow
+        p, developer, applications, create, */*, allow
+        p, developer, applications, sync, */*, allow
+        p, developer, applications, update, */*, allow
     params:
       server.insecure: true
       server.disable.auth: false

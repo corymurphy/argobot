@@ -34,6 +34,16 @@ func (p *Planner) Plan(ctx context.Context, name string, revision string) (strin
 		return plan, diff, err
 	}
 
+	// live.Spec.Info
+	// p.ArgoClient.
+
+	// for i, info := range live.Spec.Info {
+	// 	if info.Name == "corymurphy.io/argobot/lockedby" {
+	// 		info.Value =
+	// 		break
+	// 	}
+	// }
+
 	target, err := p.ArgoClient.GetManifest(name, revision)
 	if err != nil {
 		return plan, diff, err

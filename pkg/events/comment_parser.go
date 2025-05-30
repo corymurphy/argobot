@@ -34,7 +34,7 @@ type CommentParser struct {
 func NewCommentParser(logger logging.SimpleLogging) *CommentParser {
 	return &CommentParser{
 		Log:           logger,
-		AllowCommands: []command.Name{command.Help, command.Plan, command.Apply},
+		AllowCommands: []command.Name{command.Help, command.Plan, command.Apply, command.Unlock},
 	}
 }
 
@@ -153,9 +153,15 @@ func (c *CommentParser) Parse(event vsc.Event) *CommentParseResult {
 		flagSet.SetOutput(io.Discard)
 		flagSet.StringVarP(&app, applicationFlagLong, applicationFlagShort, "", "ArgoCD application to run plan against")
 	case command.Apply.String():
+		name = command.Apply
 		flagSet = pflag.NewFlagSet(command.Apply.String(), pflag.ContinueOnError)
 		flagSet.SetOutput(io.Discard)
-		flagSet.StringVarP(&app, applicationFlagLong, applicationFlagShort, "", "ArgoCD application to run plan against")
+		flagSet.StringVarP(&app, applicationFlagLong, applicationFlagShort, "", "ArgoCD application to apply changes to")
+	case command.Unlock.String():
+		name = command.Unlock
+		flagSet = pflag.NewFlagSet(command.Unlock.String(), pflag.ContinueOnError)
+		flagSet.SetOutput(io.Discard)
+		flagSet.StringVarP(&app, applicationFlagLong, applicationFlagShort, "", "ArgoCD application to unlock")
 	default:
 		c.Log.Debug("failed to parse command %s", cmd)
 		return &CommentParseResult{
@@ -223,9 +229,26 @@ Usage: argo COMMAND [ARGS]...
   Note: Please use care when running the apply command.
 	It does not lock the state between plans like atlantis right now.
 
+Examples:
+  # show the argobot help message
+  argo help
+
+  # show the plan for all modified applications
+  argo plan
+
+  # show the plan for a specific application
+  argo plan --application myapp
+
+  # apply changes for a specific application
+  argo apply --application myapp
+
+  # unlock all locked applications modified by this pull request
+  argo unlock
+
 Commands:
   help 		Shows this message
   plan 		[ --application myapp ]
   apply 	--application myapp
+  unlock 	[ --application myapp ]
 ` + "```"
 }

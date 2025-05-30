@@ -15,7 +15,7 @@ import (
 	"github.com/palantir/go-githubapp/githubapp"
 )
 
-var validPullActions = []string{"opened", "reopened", "ready_for_review"}
+var validPullActions = []string{"opened", "reopened", "ready_for_review", "closed", "synchronize"}
 
 type PullRequestHandler struct {
 	githubapp.ClientCreator
@@ -58,6 +58,19 @@ func (h *PullRequestHandler) Handle(ctx context.Context, eventType string, deliv
 	commenter := vsc.NewCommenter(client, h.Log, ctx)
 	planner := argocd.NewPlanner(&h.ArgoClient, h.Log)
 	locker := argocd.NewLocker(&h.ArgoClient, h.Log)
+
+	if *pull.Action == "closed" {
+		h.Log.Debug("pull request closed, unlocking applications")
+		for _, app := range apps {
+			err = locker.Unlock(ctx, app)
+			if err != nil {
+				h.Log.Err(err, fmt.Sprintf("unable to unlock application %s", app))
+				return err
+			}
+			h.Log.Debug("application %s unlocked", app)
+		}
+		return nil
+	}
 
 	for _, app := range apps {
 

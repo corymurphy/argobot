@@ -92,7 +92,7 @@ func Test_PlanHasApplicationName(t *testing.T) {
 
 	result := parser.Parse(event)
 	if result.Command.Name != command.Plan {
-		t.Errorf("expected %s, got %s", command.Plan, &result.Command.Name)
+		t.Errorf("expected %s, got %s", command.Plan, result.Command.Name)
 	}
 
 	if result.Command.Applications[0] != "myapp" {
@@ -126,7 +126,7 @@ func Test_ApplyHasApplicationName(t *testing.T) {
 
 	result := parser.Parse(event)
 	if result.Command.Name != command.Apply {
-		t.Errorf("expected %s, got %s", command.Apply, &result.Command.Name)
+		t.Errorf("expected %s, got %s", command.Apply, result.Command.Name)
 	}
 
 	if result.Command.Applications[0] != "myapp" {
@@ -160,6 +160,6 @@ func Test_CommandParserUnlockWithoutApplication(t *testing.T) {
 
 	result := parser.Parse(event)
 	if result.Command.Name != command.Unlock {
-		t.Errorf("expected %s, got %s", command.Unlock, &result.Command.Name)
+		t.Errorf("expected %s, got %s", command.Unlock, result.Command.Name)
 	}
 }

@@ -92,7 +92,7 @@ func Test_PlanHasApplicationName(t *testing.T) {
 
 	result := parser.Parse(event)
 	if result.Command.Name != command.Plan {
-		t.Errorf("expected %s, got %s", command.Help, &result.Command.Name)
+		t.Errorf("expected %s, got %s", command.Plan, &result.Command.Name)
 	}
 
 	if result.Command.Applications[0] != "myapp" {
@@ -132,5 +132,34 @@ func Test_ApplyHasApplicationName(t *testing.T) {
 	if result.Command.Applications[0] != "myapp" {
 		t.Log(result.Command)
 		t.Errorf("expected %s, got %s", "myapp", result.Command.Applications[0])
+	}
+}
+
+func Test_CommandParserUnlockWithoutApplication(t *testing.T) {
+	serialized := `
+	{
+		"action": "created",
+		"issue": {
+			"pull_request": {
+				"url": "https://api.github.com/example/example"
+			}
+		},
+		"comment" : {
+			"body": "argo unlock",
+			"user": {
+				"login": "githubuser"
+			}
+		}
+	}
+	`
+
+	var comment github.IssueCommentEvent
+	json.Unmarshal([]byte(serialized), &comment)
+	event, _ := vsc.InitializeFromIssueComment(comment, "")
+	parser := NewCommentParser(logging.NewLogger(logging.Silent))
+
+	result := parser.Parse(event)
+	if result.Command.Name != command.Unlock {
+		t.Errorf("expected %s, got %s", command.Unlock, &result.Command.Name)
 	}
 }

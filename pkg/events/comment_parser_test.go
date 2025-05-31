@@ -34,7 +34,7 @@ func Test_Comment_IsHelp(t *testing.T) {
 
 	result := parser.Parse(event)
 	if result.Command.Name != command.Help {
-		t.Errorf("expected %s, got %s", command.Help, &result.Command.Name)
+		t.Errorf("expected %s, got %s", command.Help, result.Command.Name)
 	}
 }
 

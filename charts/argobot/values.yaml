@@ -47,6 +47,7 @@ config: |
   privateKeyFilePath: /app/key.pem
   argoCdApiUrl: http://argocd-server.argocd.svc.cluster.local:80
   argoCdWebUrl: http://localhost:8081
+  enableLocking: true
 
 webServer:
   logLevel: info

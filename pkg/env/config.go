@@ -9,4 +9,5 @@ type Config struct {
 	ArgoCdApiUrl       string `yaml:"argoCdApiUrl"`
 	ArgoCdWebUrl       string `yaml:"argoCdWebUrl"`
 	PrivateKeyFilePath string `yaml:"privateKeyFilePath"`
+	EnableLocking      bool   `yaml:"enableLocking"`
 }

@@ -86,9 +86,9 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 	}
 
 	commenter := vsc.NewCommenter(client, h.Log, context.TODO())
+	locker := argocd.NewLocker(&h.ArgoClient, h.Log)
 
 	if comment.Command.Name == command.Unlock {
-		locker := argocd.NewLocker(&h.ArgoClient, h.Log)
 		for _, app := range apps {
 			h.Log.Debug("unlocking application %s", app)
 			err = locker.Unlock(ctx, app)
@@ -171,6 +171,35 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 			applyContext, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 			for _, app := range apps {
+
+				locked, lockedPr, err := locker.IsLocked(applyContext, app)
+				if err != nil {
+					h.Log.Err(err, fmt.Sprintf("unable to check if application %s is locked", app))
+					message := fmt.Sprintf("unable to determine if application `%s` is locked", app)
+					err = commenter.Comment(&event, &message)
+					if err != nil {
+						h.Log.Err(err, "unable to comment with lock message")
+						return
+					}
+					return
+				}
+
+				if locked && h.Config.EnableLocking {
+					h.Log.Info("application %s is locked by %s", app, lockedPr)
+					lockedUrl := fmt.Sprintf(
+						"%s/pull/%s", event.Repository.HtmlUrl(), lockedPr)
+					message := fmt.Sprintf(
+						"application `%s` is locked by pull request [%s](%s). run `argo unlock` or merge the locked pull request",
+						app, lockedPr, lockedUrl)
+					err = commenter.Comment(&event, &message)
+					if err != nil {
+						h.Log.Err(err, "unable to comment with lock message")
+						return
+					}
+					return
+				}
+
+				h.Log.Debug("application %s is not locked, proceeding with apply", app)
 				apply := NewApplyRunner(client, h.Config, h.Log, &h.ArgoClient)
 				response, err := apply.Run(applyContext, app, event)
 				if err != nil {

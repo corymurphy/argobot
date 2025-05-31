@@ -79,3 +79,23 @@ func (l *Locker) Unlock(ctx context.Context, name string) error {
 
 	return nil
 }
+
+func (l *Locker) IsLocked(ctx context.Context, name string) (bool, string, error) {
+	app, err := l.ArgoClient.Get(name)
+	if err != nil {
+		return false, "", fmt.Errorf("failed to get application %s for lock status", name)
+	}
+	if app == nil {
+		return false, "", fmt.Errorf("application %s not found", name)
+	}
+
+	for _, info := range app.Spec.Info {
+		if info.Name == LockKey {
+			l.Log.Debug("application %s is locked by %s", name, info.Value)
+			return true, info.Value, nil
+		}
+	}
+
+	l.Log.Debug("application %s is not locked", name)
+	return false, "", nil
+}

@@ -107,6 +107,26 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 		}
 	}
 
+	if comment.Command.Name == command.Unlock {
+		locker := argocd.NewLocker(&h.ArgoClient, h.Log)
+		for _, app := range apps {
+			h.Log.Debug("unlocking application %s", app)
+			err = locker.Unlock(ctx, app)
+			if err != nil {
+				h.Log.Err(err, fmt.Sprintf("unable to unlock application %s", app))
+				message := fmt.Sprintf("unable to unlock application `%s`", app)
+				commenter.Comment(&event, &message)
+				return err
+			}
+			message := fmt.Sprintf("application `%s` unlocked successfully", app)
+			err = commenter.Comment(&event, &message)
+			if err != nil {
+				h.Log.Err(err, "unable to comment with unlock result")
+				return err
+			}
+		}
+	}
+
 	if comment.Command.Name == command.Plan {
 		planner := argocd.NewPlanner(&h.ArgoClient, h.Log)
 		locker := argocd.NewLocker(&h.ArgoClient, h.Log)

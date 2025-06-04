@@ -204,7 +204,7 @@ func (h *IssueCommentHandler) Handle(ctx context.Context, eventType string, deli
 					return
 				}
 
-				if locked && h.Config.EnableLocking {
+				if locked && h.Config.EnableLocking && lockedPr != fmt.Sprint(event.PullRequest.Number) {
 					h.Log.Info("application %s is locked by %s", app, lockedPr)
 					lockedUrl := fmt.Sprintf(
 						"%s/pull/%s", event.Repository.HtmlUrl(), lockedPr)

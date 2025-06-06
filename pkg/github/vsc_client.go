@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/corymurphy/argobot/pkg/logging"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v72/github"
 	"github.com/pkg/errors"
 )
 

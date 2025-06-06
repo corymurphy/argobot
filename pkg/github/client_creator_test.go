@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/corymurphy/argobot/pkg/assert"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v72/github"
 	"github.com/gregjones/httpcache"
 	"github.com/palantir/go-githubapp/githubapp"
 	"gopkg.in/yaml.v2"

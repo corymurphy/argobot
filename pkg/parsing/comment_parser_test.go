@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v72/github"
 )
 
 func Test_Comment_IsDiff(t *testing.T) {

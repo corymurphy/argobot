@@ -11,7 +11,7 @@ import (
 	"github.com/corymurphy/argobot/pkg/env"
 	vsc "github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v72/github"
 	"github.com/palantir/go-githubapp/githubapp"
 	"github.com/pkg/errors"
 )

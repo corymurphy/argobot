@@ -1,6 +1,6 @@
 module github.com/corymurphy/argobot
 
-go 1.23.5
+go 1.24.4
 
 require (
 	github.com/argoproj/argo-cd/v2 v2.13.8

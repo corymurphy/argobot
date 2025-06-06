@@ -10,7 +10,7 @@ import (
 	"github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
 	"github.com/corymurphy/argobot/pkg/utils"
-	gogithub "github.com/google/go-github/v53/github"
+	gogithub "github.com/google/go-github/v72/github"
 )
 
 type ApplicationResolver struct {

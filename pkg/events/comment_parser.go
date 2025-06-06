@@ -9,7 +9,7 @@ import (
 	"github.com/corymurphy/argobot/pkg/command"
 	vsc "github.com/corymurphy/argobot/pkg/github"
 	"github.com/corymurphy/argobot/pkg/logging"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v72/github"
 	"github.com/google/shlex"
 	"github.com/spf13/pflag"
 )

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v72/github"
 )
 
 const (

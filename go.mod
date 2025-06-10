@@ -199,7 +199,7 @@ require (
 require (
 	github.com/ProtonMail/go-crypto v1.1.5 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.15.0 // indirect
-	github.com/cloudflare/circl v1.3.7 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	// github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect

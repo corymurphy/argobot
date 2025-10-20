@@ -1,9 +1,9 @@
 module github.com/corymurphy/argobot
 
-go 1.24.4
+go 1.24.6
 
 require (
-	github.com/argoproj/argo-cd/v2 v2.14.15
+	github.com/argoproj/argo-cd/v2 v2.14.16
 	github.com/argoproj/gitops-engine v0.7.1-0.20250521000818-c08b0a72c1f1
 	github.com/google/go-github/v72 v72.0.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
